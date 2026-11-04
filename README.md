@@ -13,6 +13,7 @@ A browser-based 3D sandbox prototype.
 - Ropes and hinges connect any two grabbable objects at the exact two points selected; both have visible 3D models
 - Welds connect crates or other grabbable build parts at the selected points and show a visible metal clamp
 - Grab tool picks up crates and build parts; held objects can be rotated and tilted
+- Dropped crates and grabbed build parts use rotated box collision bounds, gravity, angular motion, and basic object-to-object collision response
 - Thrusters, arcade bombs, simplified vehicles, circuit logic, destruction, and spreading fire
 
 ## Controls
@@ -50,4 +51,4 @@ Three.js is stored in `vendor/three.module.js` and loads locally.
 
 ## Development status
 
-This is a local single-player development build. Multiplayer networking and synchronized physics are not implemented. The physics and engineering systems are simplified prototypes. JavaScript syntax has been checked, but the latest changes have not been browser-tested yet.
+This is a local single-player development build. Multiplayer networking and synchronized physics are not implemented. The physics and engineering systems are simplified prototypes; rotated box collision and tipping are approximations, not a full rigid-body engine. JavaScript syntax has been checked, but the latest changes have not been browser-tested yet.
