@@ -34,6 +34,9 @@ small{display:block;color:#9eada1;margin-top:12px;line-height:1.5}
 .menuRow{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:18px 0 8px}
 input[type=range]{width:100%;accent-color:#b9d397}
 .menuActions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
+.buildTools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:15px 0;max-height:240px;overflow:auto}
+.buildTool{padding:9px 5px;font-size:11px;background:#35483a;color:#edf3e9;border:1px solid #ffffff28}
+.buildTool.selected{background:#b9d397;color:#172016;outline:2px solid #d8efb8}
 #jumpValue{font-weight:800;color:#d5e8bd}
 @media(max-width:900px){#top{top:8px;left:8px;gap:4px}#top .pill{font-size:9px;padding:6px}#mode{top:65px;right:8px}#hotbar{top:8px;gap:2px;max-width:calc(100vw - 12px)}.slot{flex-basis:37px;width:37px;height:42px;font-size:9px}.slot .item{font-size:8px}#help{left:8px;bottom:8px;font-size:10px}#ammo{right:8px;bottom:8px}}
 </style>
@@ -45,27 +48,13 @@ input[type=range]{width:100%;accent-color:#b9d397}
   <button class="slot selected" data-slot="1"><span class="num">1</span><span class="item">PISTOL</span></button>
   <button class="slot" data-slot="2"><span class="num">2</span><span class="item">GRAB</span></button>
   <button class="slot" data-slot="3"><span class="num">3</span><span class="item">WELD</span></button>
-  <button class="slot" data-slot="4"><span class="num">4</span><span class="item">THRUSTER</span></button>
-  <button class="slot" data-slot="5"><span class="num">5</span><span class="item">BOMB</span></button>
-  <button class="slot" data-slot="6"><span class="num">6</span><span class="item">SEAT</span></button>
-  <button class="slot" data-slot="7"><span class="num">7</span><span class="item">ENGINE</span></button>
-  <button class="slot" data-slot="8"><span class="num">8</span><span class="item">WHEEL</span></button>
-  <button class="slot" data-slot="9"><span class="num">9</span><span class="item">WIRE</span></button>
-  <button class="slot" data-slot="10"><span class="num">0</span><span class="item">SWITCH</span></button>
-  <button class="slot" data-slot="11"><span class="num">11</span><span class="item">SENSOR</span></button>
-  <button class="slot" data-slot="12"><span class="num">12</span><span class="item">MOTOR</span></button>
-  <button class="slot" data-slot="13"><span class="num">13</span><span class="item">GEAR</span></button>
-  <button class="slot" data-slot="14"><span class="num">14</span><span class="item">BEAM</span></button>
-  <button class="slot" data-slot="15"><span class="num">15</span><span class="item">HINGE</span></button>
-  <button class="slot" data-slot="16"><span class="num">16</span><span class="item">ROPE</span></button>
-  <button class="slot" data-slot="17"><span class="num">17</span><span class="item">GLASS</span></button>
-  <button class="slot" data-slot="18"><span class="num">18</span><span class="item">EXTINGUISHER</span></button>
+  <button class="slot" data-slot="4"><span class="num">4</span><span class="item">FIRE EXTINGUISHER</span></button>
  </div>
  <div id="mode" class="pill">MODE: <b id="modeState">PISTOL</b></div>
  <div id="crosshair"></div>
  <div id="ammo" class="pill">12 / 48</div>
  <div id="notice" class="pill"></div>
- <div id="help" class="pill"><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Shift</b> sprint<br><b>1</b> pistol · <b>2</b> grab/drop · <b>3</b> weld crates · <b>4</b> thruster<br><b>5</b> bomb · <b>6</b> seat · <b>7</b> engine · <b>8</b> wheel<br><b>9</b> wire parts · <b>0</b> switch · <b>F</b> sit/exit · hold <b>E</b> for thruster<br><b>Mouse wheel</b> change tool · hold click with extinguisher to spray · <b>Q</b> drop · <b>R</b> reload · <b>B</b> build menu</div>
+ <div id="help" class="pill"><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Shift</b> sprint<br><b>1</b> pistol · <b>2</b> grab/drop · <b>3</b> weld crates · <b>4</b> thruster<br><b>5</b> bomb · <b>6</b> seat · <b>7</b> engine · <b>8</b> wheel<br><b>1</b> pistol · <b>2</b> grab · <b>3</b> weld · <b>4</b> fire extinguisher<br><b>B</b> open build menu · <b>F</b> sit/exit · <b>Q</b> drop · <b>R</b> reload · <b>E</b> fire thruster</div>
 </div>
 <div id="overlay">
  <div id="panel"><h1>IDK — Sandbox PVP</h1><div class="pill" style="display:inline-block">DEMO 002 · MOVEMENT + BUILDING + HOTBAR</div><p>Explore the low-poly test area, place crates where you're aiming, and try the new hotbar and arcade pistol. This is still a single-player prototype.</p><button id="enter">ENTER WORLD</button><small>Click to lock the mouse. Three.js is included locally, so the game does not need an internet connection.</small></div>
@@ -73,8 +62,25 @@ input[type=range]{width:100%;accent-color:#b9d397}
 <div id="buildMenu">
  <div id="panel">
   <h2>Build menu</h2>
-  <p>Build mode lets you place crates at the point your crosshair is aiming at. Adjust your jump setting here too.</p>
-  <div class="pill">SELECTED BUILD ITEM: <b>WOODEN CRATE</b></div>
+  <p>Choose a construction tool, then press DONE and use it in the world. These tools stay in the build menu, not the hotbar.</p>
+  <div class="pill">SELECTED BUILD ITEM: <b id="selectedBuildLabel">WOODEN CRATE</b></div>
+  <div id="buildTools" class="buildTools">
+   <button class="buildTool selected" data-build="crate">WOODEN CRATE</button>
+   <button class="buildTool" data-build="thruster">THRUSTER</button>
+   <button class="buildTool" data-build="bomb">ARCADE BOMB</button>
+   <button class="buildTool" data-build="seat">SEAT</button>
+   <button class="buildTool" data-build="engine">ENGINE</button>
+   <button class="buildTool" data-build="wheel">WHEEL</button>
+   <button class="buildTool" data-build="wire">WIRE</button>
+   <button class="buildTool" data-build="switch">SWITCH</button>
+   <button class="buildTool" data-build="sensor">SENSOR</button>
+   <button class="buildTool" data-build="motor">MOTOR</button>
+   <button class="buildTool" data-build="gear">GEAR</button>
+   <button class="buildTool" data-build="beam">WOODEN BEAM</button>
+   <button class="buildTool" data-build="hinge">HINGE</button>
+   <button class="buildTool" data-build="rope">ROPE</button>
+   <button class="buildTool" data-build="glass">GLASS</button>
+  </div>
   <div class="menuRow"><label for="jumpHeight">Jump height</label><span id="jumpValue">7.2</span></div>
   <input id="jumpHeight" type="range" min="4" max="12" step="0.2" value="7.2">
   <small>Higher values make your character jump higher. This setting is saved for this session.</small>
@@ -171,7 +177,7 @@ const center=new THREE.Vector2(0,0);
 const crateGeo=new THREE.BoxGeometry(1.2,1.2,1.2);
 const keys={};
 let yaw=0,pitch=0,locked=false,started=false,buildMode=false,buildMenuOpen=false,vy=0,onGround=false;
-let selectedSlot=1,jumpVelocity=7.2,ammo=12,reserveAmmo=48,lastShot=0,reloading=false;
+let selectedSlot=1,selectedBuildTool='crate',jumpVelocity=7.2,ammo=12,reserveAmmo=48,lastShot=0,reloading=false;
 let heldCrate=null,weldTarget=null;
 const welds=[],bombs=[],vehicleWires=[],logicLinks=[],structuralLinks=[],fires=[],sprayEffects=[],glassShards=[];
 let wireSource=null,driverSeat=null,drivingRoot=null;
@@ -190,16 +196,16 @@ function say(s){
 }
 function updateAmmo(){ammoDisplay.textContent=ammo+' / '+reserveAmmo}
 function updateMode(){
- modeState.textContent=buildMode?'BUILD':({1:'PISTOL',2:'GRAB',3:'WELD',4:'THRUSTER',5:'BOMB',6:'SEAT',7:'ENGINE',8:'WHEEL',9:'WIRE',10:'SWITCH',11:'SENSOR',12:'MOTOR',13:'GEAR',14:'BEAM',15:'HINGE',16:'ROPE',17:'GLASS',18:'EXTINGUISHER'}[selectedSlot]||'EMPTY');
+ modeState.textContent=buildMode?'BUILD: '+selectedBuildTool.toUpperCase():({1:'PISTOL',2:'GRAB',3:'WELD',4:'FIRE EXTINGUISHER'}[selectedSlot]||'EMPTY');
  document.getElementById('mode').style.display=buildMenuOpen?'none':'block';
 }
 function selectSlot(n){
  selectedSlot=n;
  document.querySelectorAll('.slot').forEach(b=>b.classList.toggle('selected',Number(b.dataset.slot)===n));
  updateMode();
- if(n!==9)wireSource=null;
+ wireSource=null;
  if(n!==2&&heldCrate)dropCrate();
- if(n!==3)weldTarget=null;
+ weldTarget=null;
 }
 document.querySelectorAll('.slot').forEach(b=>{
  b.addEventListener('click',()=>{
@@ -536,6 +542,26 @@ function closeBuildMenu(exitMode=false){
  updateMode();
  if(started)renderer.domElement.requestPointerLock();
 }
+document.querySelectorAll('.buildTool').forEach(button=>{
+ button.addEventListener('click',()=>{
+  selectedBuildTool=button.dataset.build;
+  document.querySelectorAll('.buildTool').forEach(b=>b.classList.toggle('selected',b===button));
+  document.getElementById('selectedBuildLabel').textContent=button.textContent;
+  updateMode();
+ });
+});
+function useSelectedBuildTool(){
+ if(selectedBuildTool==='crate'){const hit=getAimHit();if(hit)placeCrate(hit.point);else say('Aim at a surface to place a crate');}
+ else if(selectedBuildTool==='thruster')attachThruster();
+ else if(selectedBuildTool==='bomb')placeArcadeBomb();
+ else if(['seat','engine','wheel'].includes(selectedBuildTool))addVehiclePart(selectedBuildTool);
+ else if(selectedBuildTool==='wire')useWireTool();
+ else if(selectedBuildTool==='switch'){
+  const part=findAimedPart();if(part&&part.userData.vehiclePart==='switch')toggleSwitch();else addCircuitPart('switch');
+ }
+ else if(['sensor','motor','gear','beam','glass'].includes(selectedBuildTool))addCircuitPart(selectedBuildTool);
+ else if(selectedBuildTool==='hinge'||selectedBuildTool==='rope')connectStructure(selectedBuildTool);
+}
 document.getElementById('jumpHeight').addEventListener('input',e=>{
  jumpVelocity=Number(e.target.value);
  document.getElementById('jumpValue').textContent=jumpVelocity.toFixed(1);
@@ -568,36 +594,22 @@ document.addEventListener('keydown',e=>{
  if(e.code==='KeyR'&&locked)reload();
  if(e.code==='KeyQ'&&locked)dropCrate();
  if(e.code==='KeyF'&&locked)tryUseSeat();
- if(e.code==='Digit0')selectSlot(10);
- if(/^Digit[1-9]$/.test(e.code)){
-  const n=Number(e.code.slice(5));selectSlot(n);
- }
+ if(/^Digit[1-4]$/.test(e.code))selectSlot(Number(e.code.slice(5)));
 });
 document.addEventListener('keyup',e=>keys[e.code]=false);
 document.addEventListener('mouseup',e=>{if(e.button===0)mouseHeld=false});
 let mouseHeld=false,sprayCooldown=0;
-document.addEventListener('wheel',e=>{if(!locked)return;selectSlot(((selectedSlot-1+(e.deltaY>0?1:17))%18)+1)},{passive:true});
+document.addEventListener('wheel',e=>{if(!locked)return;selectSlot(((selectedSlot-1+(e.deltaY>0?1:3))%4)+1)},{passive:true});
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('mousedown',e=>{
  if(!locked)return;
- if(e.button===0){mouseHeld=true;if(selectedSlot===18){sprayCooldown=0;return}}
+ if(e.button===0){mouseHeld=true;if(selectedSlot===4){sprayCooldown=0;return}}
  if(e.button===0){
-  if(selectedSlot===18){return}
-  if(buildMode) {
-   const hit=getAimHit();
-   if(hit)placeCrate(hit.point);else say('Aim at a surface to place a crate');
-  } else if(selectedSlot===1)firePistol();
+  if(selectedSlot===4)return;
+  if(buildMode)useSelectedBuildTool();
+  else if(selectedSlot===1)firePistol();
   else if(selectedSlot===2)useGrabTool();
   else if(selectedSlot===3)useWeldTool();
-  else if(selectedSlot===4)attachThruster();
-  else if(selectedSlot===5)placeArcadeBomb();
-  else if(selectedSlot===6)addVehiclePart("seat");
-  else if(selectedSlot===7)addVehiclePart("engine");
-  else if(selectedSlot===8)addVehiclePart("wheel");
-  else if(selectedSlot===9)useWireTool();
-  else if(selectedSlot===10)toggleSwitch();
-  else if(selectedSlot===11||selectedSlot===12||selectedSlot===13||selectedSlot===14||selectedSlot===17)addCircuitPart(({11:'sensor',12:'motor',13:'gear',14:'beam',17:'glass'})[selectedSlot]);
-  else if(selectedSlot===15||selectedSlot===16)connectStructure(selectedSlot===15?'hinge':'rope');
  } else if(e.button===2){
   const hit=getAimHit();
   if(hit){
@@ -616,7 +628,7 @@ const clock=new THREE.Clock();
 function animate(){
  requestAnimationFrame(animate);
  const dt=Math.min(clock.getDelta(),.04);
- if(locked&&selectedSlot===18&&mouseHeld){sprayCooldown-=dt;if(sprayCooldown<=0){extinguishNearAim();sprayCooldown=.16}}
+ if(locked&&selectedSlot===4&&mouseHeld){sprayCooldown-=dt;if(sprayCooldown<=0){extinguishNearAim();sprayCooldown=.16}}
  if(locked&&!driverSeat){
   const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
   const r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
