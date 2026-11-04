@@ -55,7 +55,6 @@ Current features:
 - F: sit in an aimed-at seat or exit the current seat
 - Q: drop a held crate
 - R: reload
-- B: open/close build menu
 - Right click: remove an aimed-at crate
 - Esc: release mouse
 
