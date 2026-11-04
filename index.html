@@ -574,7 +574,7 @@ function resolveGroundContact(obj){
  if(lowest>=0)return;
  const contact=contacts.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).multiplyScalar(1/contacts.length);obj.position.y-=lowest;
  const arm=contact.sub(obb.center),mass=obj.userData.mass||1,torque=new THREE.Vector3().crossVectors(arm,new THREE.Vector3(0,-15*mass,0));
- obj.userData.angularVelocity.addScaledVector(torque,inverseInertia(obj)*.85*dtFixed);
+ obj.userData.angularVelocity.addScaledVector(torque,inverseInertia(obj)*.85*dt);
  const vel=obj.userData.velocity;if(vel.y<0)vel.y=Math.max(0,-vel.y*.08);vel.x*=.985;vel.z*=.985;obj.userData.angularVelocity.multiplyScalar(.995);
 }
 function updatePhysics(dt){
