@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IDK — Sandbox PVP Demo</title>
+<style>
+*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#172019;color:#f1f4ed;font:14px system-ui,Segoe UI,sans-serif}
+#hud{position:fixed;inset:0;pointer-events:none}.pill{background:#111a15d9;border:1px solid #ffffff26;border-radius:8px;padding:8px 11px;font-size:12px}
+#top{position:absolute;top:15px;left:16px;display:flex;gap:8px}#mode{position:absolute;right:16px;top:15px}
+#help{position:absolute;bottom:15px;left:16px;line-height:1.6}#crosshair{position:absolute;left:50%;top:50%;width:8px;height:8px;border:1.5px solid white;border-radius:50%;transform:translate(-50%,-50%);filter:drop-shadow(0 1px 2px #000)}
+#notice{position:absolute;top:60%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .2s}
+#overlay{position:fixed;inset:0;display:grid;place-items:center;background:#101713c9;z-index:3}
+#panel{width:min(440px,calc(100% - 32px));padding:26px;border:1px solid #ffffff30;border-radius:15px;background:#1b2920;box-shadow:0 20px 70px #0009}
+h1{font-size:28px;margin:0 0 8px;letter-spacing:-1px}p{color:#c4cec5;line-height:1.55;margin:12px 0 18px}
+button{border:0;border-radius:8px;background:#b9d397;color:#172016;font-weight:800;padding:12px 17px;cursor:pointer}button:hover{background:#cce4a7}
+small{display:block;color:#9eada1;margin-top:12px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="hud">
+ <div id="top"><div class="pill">IDK · SANDBOX PVP</div><div class="pill">DEMO 001 · SINGLE PLAYER</div></div>
+ <div id="mode" class="pill">BUILD MODE: <b id="buildState">OFF</b></div>
+ <div id="crosshair"></div>
+ <div id="notice" class="pill"></div>
+ <div id="help" class="pill"><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Shift</b> sprint<br><b>B</b> toggle building · <b>Left click</b> place crate · <b>Right click</b> remove crate<br><b>Esc</b> release mouse</div>
+</div>
+<div id="overlay"><div id="panel"><h1>IDK — Sandbox PVP</h1><div class="pill" style="display:inline-block">DEMO 001 · MOVEMENT + FREE BUILDING</div><p>Explore a low-poly test area in first person. Run, jump, and freely place wooden crates. This is our single-player prototype; multiplayer comes later.</p><button id="enter">ENTER WORLD</button><small>Click to lock the mouse. Three.js loads from a public CDN, so an internet connection is required.</small></div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9eb6b5);scene.fog=new THREE.Fog(0x9eb6b5,48,145);
+const camera=new THREE.PerspectiveCamera(76,innerWidth/innerHeight,.1,220);camera.rotation.order='YXZ';camera.position.set(0,1.7,12);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xdce9e3,0x59634b,2));
+const sun=new THREE.DirectionalLight(0xffedcf,2.2);sun.position.set(-35,55,25);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-70;sun.shadow.camera.right=70;sun.shadow.camera.top=70;sun.shadow.camera.bottom=-70;scene.add(sun);
+const mat={grass:new THREE.MeshStandardMaterial({color:0x687f53,roughness:1}),trunk:new THREE.MeshStandardMaterial({color:0x594633,roughness:1}),wood:new THREE.MeshStandardMaterial({color:0x92734d,roughness:.95}),dark:new THREE.MeshStandardMaterial({color:0x554632,roughness:1}),leaves:[0x536f48,0x607b4c,0x71865a].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:1,flatShading:true})),rocks:[0x777d78,0x686f6b,0x85877d].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:1,flatShading:true}))};
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(180,180),mat.grass);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+const obstacles=[],crates=[];const player={x:0,z:12,r:.38};let seed=9147;const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+function tree(x,z,s){const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(s);const t=new THREE.Mesh(new THREE.CylinderGeometry(.22,.34,2.8,7),mat.trunk);t.position.y=1.4;t.castShadow=true;g.add(t);for(let i=0;i<3;i++){const c=new THREE.Mesh(new THREE.ConeGeometry(1.45-i*.2,2.4,7),mat.leaves[(i+Math.floor(x+z+20)+9)%3]);c.position.y=2.8+i*.72;c.castShadow=true;g.add(c)}scene.add(g);obstacles.push({x,z,r:.62*s})}
+function rock(x,z,s){const m=new THREE.Mesh(new THREE.DodecahedronGeometry(1,0),mat.rocks[Math.abs(Math.floor(x*3+z*7))%3]);m.position.set(x,.55*s,z);m.scale.set(1.25*s,.8*s,s);m.castShadow=true;m.receiveShadow=true;scene.add(m);obstacles.push({x,z,r:.8*s})}
+for(let i=0;i<82;i++){const a=rand()*Math.PI*2,r=14+rand()*62,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.hypot(x,z)<18)continue;if(rand()<.7)tree(x,z,.75+rand()*.65);else rock(x,z,.6+rand()*.8)}
+function block(w,h,d,material,x,y,z,collide=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);if(collide)obstacles.push({x,z,r:Math.max(w,d)*.48});return m}
+block(7,.35,6,mat.dark,-8,.18,-8);for(let i=0;i<4;i++)block(.28,2.1,.28,mat.trunk,-11.1+i*2.05,1.2,-10.8);block(7,.25,.3,mat.wood,-8,2.3,-10.8);block(7,.25,.3,mat.wood,-8,2.3,-6.8);block(.3,.25,4,mat.wood,-11.3,2.3,-8.8);block(.3,.25,4,mat.wood,-4.7,2.3,-8.8);
+const ray=new THREE.Raycaster(),center=new THREE.Vector2(0,0),crateGeo=new THREE.BoxGeometry(1.2,1.2,1.2),keys={};let yaw=0,pitch=0,locked=false,build=false,vy=0,onGround=false;
+const overlay=document.getElementById('overlay'),notice=document.getElementById('notice');
+function say(s){notice.textContent=s;notice.style.opacity=1;clearTimeout(say.timer);say.timer=setTimeout(()=>notice.style.opacity=0,1300)}
+function toggleBuild(){build=!build;document.getElementById('buildState').textContent=build?'ON':'OFF';say(build?'Build mode on':'Build mode off')}
+function placeCrate(p){const m=new THREE.Mesh(crateGeo,mat.wood.clone());m.position.set(p.x,.6,p.z);m.castShadow=true;m.receiveShadow=true;scene.add(m);crates.push(m);obstacles.push({x:p.x,z:p.z,r:.82,mesh:m})}
+function removeCrate(m){const i=crates.indexOf(m);if(i>=0)crates.splice(i,1);const j=obstacles.findIndex(o=>o.mesh===m);if(j>=0)obstacles.splice(j,1);scene.remove(m);m.material.dispose()}
+document.getElementById('enter').onclick=()=>renderer.domElement.requestPointerLock();
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;overlay.style.display=locked?'none':'grid'});
+document.addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch=Math.max(-1.48,Math.min(1.48,pitch-e.movementY*.0022));camera.rotation.set(pitch,yaw,0)});
+document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault();if(e.code==='KeyB'&&!e.repeat)toggleBuild()});document.addEventListener('keyup',e=>keys[e.code]=false);document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('mousedown',e=>{if(!locked)return;ray.setFromCamera(center,camera);if(e.button===0&&build){const hit=ray.intersectObject(ground)[0];if(hit&&Math.hypot(hit.point.x-player.x,hit.point.z-player.z)>1.3){placeCrate(hit.point);say('Crate placed')}else if(hit)say('Too close to place')}else if(e.button===2){const hit=ray.intersectObjects(crates)[0];if(hit&&hit.distance<8){removeCrate(hit.object);say('Crate removed')}}});
+function blocked(x,z){if(Math.abs(x)>86||Math.abs(z)>86)return true;for(const o of obstacles)if((x-o.x)**2+(z-o.z)**2<(o.r+player.r)**2)return true;return false}
+const clock=new THREE.Clock();function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);if(locked){const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),m=new THREE.Vector3();if(keys.KeyW)m.add(f);if(keys.KeyS)m.sub(f);if(keys.KeyD)m.add(r);if(keys.KeyA)m.sub(r);if(m.lengthSq())m.normalize();const speed=keys.ShiftLeft||keys.ShiftRight?9.2:5.8,nx=player.x+m.x*speed*dt,nz=player.z+m.z*speed*dt;if(!blocked(nx,player.z))player.x=nx;if(!blocked(player.x,nz))player.z=nz;if(keys.Space&&onGround){vy=7.2;onGround=false}vy-=19*dt;camera.position.y+=vy*dt;if(camera.position.y<=1.7){camera.position.y=1.7;vy=0;onGround=true}camera.position.x=player.x;camera.position.z=player.z}renderer.render(scene,camera)}animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>
