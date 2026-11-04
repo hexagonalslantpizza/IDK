@@ -16,8 +16,8 @@ canvas{display:block}
 #help{position:absolute;bottom:15px;left:14px;line-height:1.65}
 #crosshair{position:absolute;left:50%;top:50%;width:9px;height:9px;border:1.5px solid white;border-radius:50%;transform:translate(-50%,-50%);filter:drop-shadow(0 1px 2px #000)}
 #notice{position:absolute;top:62%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .2s;white-space:nowrap}
-#hotbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:5px;pointer-events:auto}
-.slot{width:54px;height:52px;padding:4px;background:#111a15df;border:1px solid #ffffff55;border-radius:7px;color:#eaf0e8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10px}
+#hotbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:3px;pointer-events:auto;max-width:calc(100vw - 24px);overflow-x:auto;padding:2px}
+.slot{flex:0 0 43px;width:43px;height:48px;padding:3px;background:#111a15df;border:1px solid #ffffff55;border-radius:7px;color:#eaf0e8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10px}
 .slot .num{align-self:flex-start;font-size:9px;color:#c2d0c2;line-height:1}
 .slot .item{font-size:11px;font-weight:800}
 .slot.selected{outline:2px solid #c5e39e;background:#344b32}
@@ -35,7 +35,7 @@ small{display:block;color:#9eada1;margin-top:12px;line-height:1.5}
 input[type=range]{width:100%;accent-color:#b9d397}
 .menuActions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
 #jumpValue{font-weight:800;color:#d5e8bd}
-@media(max-width:650px){#top{top:8px;left:8px;gap:4px}#top .pill{font-size:9px;padding:6px}#mode{top:65px;right:8px}#hotbar{top:8px;gap:3px}.slot{width:37px;height:44px;font-size:9px}.slot .item{font-size:9px}#help{left:8px;bottom:8px;font-size:10px}#ammo{right:8px;bottom:8px}}
+@media(max-width:900px){#top{top:8px;left:8px;gap:4px}#top .pill{font-size:9px;padding:6px}#mode{top:65px;right:8px}#hotbar{top:8px;gap:2px;max-width:calc(100vw - 12px)}.slot{flex-basis:37px;width:37px;height:42px;font-size:9px}.slot .item{font-size:8px}#help{left:8px;bottom:8px;font-size:10px}#ammo{right:8px;bottom:8px}}
 </style>
 </head>
 <body>
@@ -51,12 +51,21 @@ input[type=range]{width:100%;accent-color:#b9d397}
   <button class="slot" data-slot="7"><span class="num">7</span><span class="item">ENGINE</span></button>
   <button class="slot" data-slot="8"><span class="num">8</span><span class="item">WHEEL</span></button>
   <button class="slot" data-slot="9"><span class="num">9</span><span class="item">WIRE</span></button>
+  <button class="slot" data-slot="10"><span class="num">0</span><span class="item">SWITCH</span></button>
+  <button class="slot" data-slot="11"><span class="num">11</span><span class="item">SENSOR</span></button>
+  <button class="slot" data-slot="12"><span class="num">12</span><span class="item">MOTOR</span></button>
+  <button class="slot" data-slot="13"><span class="num">13</span><span class="item">GEAR</span></button>
+  <button class="slot" data-slot="14"><span class="num">14</span><span class="item">BEAM</span></button>
+  <button class="slot" data-slot="15"><span class="num">15</span><span class="item">HINGE</span></button>
+  <button class="slot" data-slot="16"><span class="num">16</span><span class="item">ROPE</span></button>
+  <button class="slot" data-slot="17"><span class="num">17</span><span class="item">GLASS</span></button>
+  <button class="slot" data-slot="18"><span class="num">18</span><span class="item">EXTINGUISHER</span></button>
  </div>
  <div id="mode" class="pill">MODE: <b id="modeState">PISTOL</b></div>
  <div id="crosshair"></div>
  <div id="ammo" class="pill">12 / 48</div>
  <div id="notice" class="pill"></div>
- <div id="help" class="pill"><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Shift</b> sprint<br><b>1</b> pistol · <b>2</b> grab/drop · <b>3</b> weld crates · <b>4</b> thruster<br><b>5</b> bomb · <b>6</b> seat · <b>7</b> engine · <b>8</b> wheel<br><b>9</b> wire engine to wheels · <b>F</b> sit/exit · hold <b>E</b> for thruster<br><b>Q</b> drop crate · <b>R</b> reload · <b>B</b> build menu · <b>Right click</b> remove crate</div>
+ <div id="help" class="pill"><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Shift</b> sprint<br><b>1</b> pistol · <b>2</b> grab/drop · <b>3</b> weld crates · <b>4</b> thruster<br><b>5</b> bomb · <b>6</b> seat · <b>7</b> engine · <b>8</b> wheel<br><b>9</b> wire parts · <b>0</b> switch · <b>F</b> sit/exit · hold <b>E</b> for thruster<br><b>Mouse wheel</b> change tool · hold click with extinguisher to spray · <b>Q</b> drop · <b>R</b> reload · <b>B</b> build menu</div>
 </div>
 <div id="overlay">
  <div id="panel"><h1>IDK — Sandbox PVP</h1><div class="pill" style="display:inline-block">DEMO 002 · MOVEMENT + BUILDING + HOTBAR</div><p>Explore the low-poly test area, place crates where you're aiming, and try the new hotbar and arcade pistol. This is still a single-player prototype.</p><button id="enter">ENTER WORLD</button><small>Click to lock the mouse. Three.js is included locally, so the game does not need an internet connection.</small></div>
@@ -164,7 +173,7 @@ const keys={};
 let yaw=0,pitch=0,locked=false,started=false,buildMode=false,buildMenuOpen=false,vy=0,onGround=false;
 let selectedSlot=1,jumpVelocity=7.2,ammo=12,reserveAmmo=48,lastShot=0,reloading=false;
 let heldCrate=null,weldTarget=null;
-const welds=[],bombs=[],vehicleWires=[];
+const welds=[],bombs=[],vehicleWires=[],logicLinks=[],structuralLinks=[],fires=[],sprayEffects=[];
 let wireSource=null,driverSeat=null,drivingRoot=null;
 const magazineSize=12,shotCooldown=300;
 const overlay=document.getElementById('overlay');
@@ -181,7 +190,7 @@ function say(s){
 }
 function updateAmmo(){ammoDisplay.textContent=ammo+' / '+reserveAmmo}
 function updateMode(){
- modeState.textContent=buildMode?'BUILD':({1:'PISTOL',2:'GRAB',3:'WELD',4:'THRUSTER',5:'BOMB',6:'SEAT',7:'ENGINE',8:'WHEEL',9:'WIRE'}[selectedSlot]||'EMPTY');
+ modeState.textContent=buildMode?'BUILD':({1:'PISTOL',2:'GRAB',3:'WELD',4:'THRUSTER',5:'BOMB',6:'SEAT',7:'ENGINE',8:'WHEEL',9:'WIRE',10:'SWITCH',11:'SENSOR',12:'MOTOR',13:'GEAR',14:'BEAM',15:'HINGE',16:'ROPE',17:'GLASS',18:'EXTINGUISHER'}[selectedSlot]||'EMPTY');
  document.getElementById('mode').style.display=buildMenuOpen?'none':'block';
 }
 function selectSlot(n){
@@ -205,7 +214,7 @@ function placeCrate(point){
   if((x-o.x)**2+(z-o.z)**2<(o.r+.78)**2){say('That spot is blocked');return}
  }
  const m=new THREE.Mesh(crateGeo,mat.wood.clone());
- m.position.set(x,.6,z);m.castShadow=true;m.receiveShadow=true;m.userData.velocity=new THREE.Vector3();m.userData.thruster=false;scene.add(m);
+ m.position.set(x,.6,z);m.castShadow=true;m.receiveShadow=true;m.userData.velocity=new THREE.Vector3();m.userData.thruster=false;m.userData.burnable=true;scene.add(m);
  crates.push(m);obstacles.push({x,z,r:.82,mesh:m});say('Crate placed');
 }
 function removeCrate(m){
@@ -251,14 +260,122 @@ function addVehiclePart(type){
  root.add(group);say(type.toUpperCase()+' attached to vehicle');
 }
 function useWireTool(){
- const part=findAimedPart();if(!part){say('Aim at an engine or wheel');return}
- if(!wireSource){if(part.userData.vehiclePart!=='engine'){say('Select an engine first');return}wireSource=part;say('Engine selected — click a wheel to connect');return}
- if(part.userData.vehiclePart!=='wheel'){say('Now select a wheel');return}
- if(part.userData.root!==wireSource.userData.root){say('Engine and wheel must be on the same vehicle frame');return}
- if(vehicleWires.some(w=>w.engine===wireSource&&w.wheel===part)){say('That wheel is already wired');wireSource=null;return}
- const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([wireSource.getWorldPosition(new THREE.Vector3()),part.getWorldPosition(new THREE.Vector3())]),new THREE.LineBasicMaterial({color:0x70d9c9}));
- scene.add(line);vehicleWires.push({engine:wireSource,wheel:part,line});wireSource=null;say('Engine wired to wheel');
+ const part=findAimedPart();if(!part){say('Aim at a circuit part, engine, or wheel');return}
+ if(!wireSource){
+  if(!['engine','switch','sensor'].includes(part.userData.vehiclePart)){say('Start with an engine, switch, or sensor');return}
+  wireSource=part;say('Source selected — click a wheel or motor');return;
+ }
+ const source=wireSource;wireSource=null;
+ if(source.userData.root!==part.userData.root){say('Parts must be on the same frame');return}
+ if(source.userData.vehiclePart==='engine'&&part.userData.vehiclePart==='wheel'){
+  if(vehicleWires.some(w=>w.engine===source&&w.wheel===part)){say('That wheel is already wired');return}
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([source.getWorldPosition(new THREE.Vector3()),part.getWorldPosition(new THREE.Vector3())]),new THREE.LineBasicMaterial({color:0x70d9c9}));
+  scene.add(line);vehicleWires.push({engine:source,wheel:part,line});say('Engine wired to wheel');return;
+ }
+ if(['switch','sensor'].includes(source.userData.vehiclePart)&&part.userData.vehiclePart==='motor'){
+  if(logicLinks.some(w=>w.source===source&&w.motor===part)){say('Already connected');return}
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([source.getWorldPosition(new THREE.Vector3()),part.getWorldPosition(new THREE.Vector3())]),new THREE.LineBasicMaterial({color:0xf0d36b}));
+  scene.add(line);logicLinks.push({source,motor:part,line});say('Logic signal connected to motor');return;
+ }
+ say('Connect engine to wheel, or switch/sensor to motor');
 }
+function addCircuitPart(type){
+ const root=findAimedCrate();if(!root){say('Aim at a crate to attach this part');return}
+ root.userData.vehicleParts=root.userData.vehicleParts||{seat:null,engine:null,wheels:[]};
+ const group=new THREE.Group();group.userData.vehiclePart=type;group.userData.root=root;group.position.set(0,.62,0);
+ const metal=new THREE.MeshStandardMaterial({color:0x59666a,metalness:.65,roughness:.42});
+ if(type==='switch'){
+  const base=new THREE.Mesh(new THREE.BoxGeometry(.55,.18,.48),metal);base.position.y=.42;group.add(base);
+  const lever=new THREE.Mesh(new THREE.BoxGeometry(.09,.38,.09),new THREE.MeshStandardMaterial({color:0xd5b56c,metalness:.35,roughness:.5}));lever.position.set(0,.68,0);lever.rotation.z=-.35;group.add(lever);group.userData.lever=lever;group.userData.on=false;
+ }else if(type==='sensor'){
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.22,.28,.2,10),metal);base.position.y=.42;group.add(base);
+  const lens=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),new THREE.MeshStandardMaterial({color:0x55c9d2,emissive:0x174e55,roughness:.25}));lens.position.y=.62;group.add(lens);
+ }else if(type==='motor'){
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.55,12),metal);body.rotation.z=Math.PI/2;body.position.y=.5;group.add(body);
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.42,10),new THREE.MeshStandardMaterial({color:0xc5c8c2,metalness:.8,roughness:.25}));shaft.rotation.z=Math.PI/2;shaft.position.set(.38,.5,0);group.add(shaft);group.userData.rotor=shaft;
+ }else if(type==='gear'){
+  const gear=new THREE.Mesh(new THREE.TorusGeometry(.38,.09,6,12),new THREE.MeshStandardMaterial({color:0xb1a16f,metalness:.75,roughness:.35}));gear.position.y=.55;group.add(gear);group.userData.rotor=gear;
+  const hub=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.18,10),metal);hub.position.y=.55;group.add(hub);
+ }else if(type==='beam'){
+  const beam=new THREE.Mesh(new THREE.BoxGeometry(3.2,.22,.24),mat.wood.clone());beam.position.y=.62;beam.castShadow=true;beam.receiveShadow=true;beam.userData.burnable=true;group.add(beam);group.userData.burnable=true;
+ }else if(type==='glass'){
+  const glass=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.4,.12),new THREE.MeshPhysicalMaterial({color:0x9bd5df,transparent:true,opacity:.34,roughness:.08,metalness:0,transmission:.25}));glass.position.y=1.25;glass.castShadow=true;group.add(glass);group.userData.glass=true;
+ }
+ root.add(group);say(type.toUpperCase()+' attached');
+}
+function connectStructure(type){
+ const root=findAimedCrate();if(!root){say('Aim at a crate');return}
+ if(!weldTarget){weldTarget=root;say('First anchor selected — aim at another crate');return}
+ if(weldTarget===root){say('Choose a different crate');return}
+ const a=weldTarget,b=root;weldTarget=null;
+ const pa=a.position.clone().add(new THREE.Vector3(0,.35,0)),pb=b.position.clone().add(new THREE.Vector3(0,.35,0));
+ const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([pa,pb]),new THREE.LineBasicMaterial({color:type==='rope'?0xc7a66c:0xc1c8cb}));
+ scene.add(line);structuralLinks.push({type,a,b,line,length:pa.distanceTo(pb),rest:a.position.distanceTo(b.position)});
+ say(type.toUpperCase()+' connected');
+}
+function toggleSwitch(){
+ const part=findAimedPart();if(!part||part.userData.vehiclePart!=='switch'){say('Aim at a switch to toggle it');return}
+ part.userData.on=!part.userData.on;
+ if(part.userData.lever)part.userData.lever.rotation.z=part.userData.on?.35:-.35;
+ say(part.userData.on?'Switch ON':'Switch OFF');
+}
+function updateSensorStates(){
+ for(const root of crates){
+  const parts=root.userData.vehicleParts;if(!parts)continue;
+  const scan=root.children.filter(c=>c.userData.vehiclePart==='sensor');
+  for(const sensor of scan){
+   const p=sensor.getWorldPosition(new THREE.Vector3());
+   sensor.userData.active=crates.some(other=>other!==root&&other.position.distanceTo(p)<5);
+  }
+ }
+}
+function ignite(target,type){
+ if(!target||target.userData.burning||target.userData.burnable===false)return;
+ if(type==='crate'&&!crates.includes(target))return;
+ target.userData.burning=true;
+ if(type==='tree'){
+  for(const child of target.group.children)if(child.material)child.material=child.material.clone();
+ }
+ const flame=new THREE.Mesh(new THREE.ConeGeometry(type==='tree'?.48:.35,1.15,7),new THREE.MeshBasicMaterial({color:0xff8a32,transparent:true,opacity:.78}));
+ flame.position.set(0,type==='tree'?2.2:1.15,0);target.group?.add(flame);if(type==='crate')target.add(flame);
+ fires.push({target,type,time:0,flame});
+}
+function extinguishNearAim(){
+ const start=camera.position.clone(),dir=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+ let count=0;
+ for(let i=fires.length-1;i>=0;i--){
+  const f=fires[i],p=f.type==='tree'?f.target.group.position:f.target.position;
+  const rel=p.clone().sub(start),along=rel.dot(dir),closest=start.clone().addScaledVector(dir,Math.max(0,Math.min(10,along)));
+  if(along>=0&&along<=10&&p.distanceTo(closest)<2.5){f.target.userData.burning=false;if(f.flame.parent)f.flame.parent.remove(f.flame);fires.splice(i,1);count++}
+ }
+ const end=start.clone().addScaledVector(dir,6);
+ const spray=new THREE.Line(new THREE.BufferGeometry().setFromPoints([start,end]),new THREE.LineBasicMaterial({color:0xa8e8ef,transparent:true,opacity:.48}));
+ scene.add(spray);sprayEffects.push({line:spray,time:.12});
+ if(count)say('Fire extinguished');
+}
+function updateFire(dt){
+ for(let i=fires.length-1;i>=0;i--){
+  const f=fires[i];f.time+=dt;
+  const p=f.type==='tree'?f.target.group.position:f.target.position;
+  f.flame.scale.setScalar(.8+Math.sin(f.time*12)*.14);f.flame.rotation.y+=dt*1.7;
+  if(f.time>1.5&&Math.floor(f.time*2)!==Math.floor((f.time-dt)*2)){
+   for(const other of crates)if(other!==f.target&&other.userData.burnable&&other.position.distanceTo(p)<2.7)ignite(other,'crate');
+   for(const treeData of trees)if(!treeData.fallen&&f.target!==treeData&&treeData.group.position.distanceTo(p)<2.7)ignite(treeData,'tree');
+  }
+  if(f.time>=20&&f.time-dt<20){
+   if(f.type==='crate'&&f.target.material)f.target.material.color.set(0x171614);
+   if(f.type==='tree')for(const child of f.target.group.children)if(child.material?.color)child.material.color.set(0x171614);
+   say('Burned object has turned black');
+  }
+  if(f.time>=30){
+   if(f.type==='crate'){removeCrate(f.target)}
+   else{const t=f.target;scene.remove(t.group);const oi=obstacles.findIndex(o=>o.tree===t);if(oi>=0)obstacles.splice(oi,1);t.fallen=true}
+   if(f.flame.parent)f.flame.parent.remove(f.flame);fires.splice(i,1);
+  }
+ }
+ for(let i=sprayEffects.length-1;i>=0;i--){const e=sprayEffects[i];e.time-=dt;if(e.time<=0){scene.remove(e.line);e.line.geometry.dispose();e.line.material.dispose();sprayEffects.splice(i,1)}}
+}
+
 function tryUseSeat(){
  if(driverSeat){driverSeat=null;drivingRoot=null;say('You left the seat');return}
  const part=findAimedPart();if(!part||part.userData.vehiclePart!=='seat'){say('Aim at a vehicle seat and press F');return}
@@ -312,7 +429,7 @@ function arcadeBlast(bomb){
  for(const m of crates){
   if(m===heldCrate)continue;
   const delta=m.position.clone().sub(center),dist=delta.length();
-  if(dist<13){if(dist<.01)delta.set(0,1,0);else delta.normalize();m.userData.velocity.addScaledVector(delta,(1-dist/13)*24)}
+  if(dist<13){if(dist<.01)delta.set(0,1,0);else delta.normalize();m.userData.velocity.addScaledVector(delta,(1-dist/13)*24);if(dist<5&&m.userData.burnable)ignite(m,'crate')}
  }
  say('BOOM! Crates launched everywhere!');
 }
@@ -322,6 +439,7 @@ function getWeldedAssembly(start){
  return [...found];
 }
 function updatePhysics(dt){
+ updateSensorStates();
  if(drivingRoot&&driverSeat&&crates.includes(drivingRoot)&&vehiclePowered(drivingRoot)){
   const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),drive=new THREE.Vector3();
   if(keys.KeyW)drive.add(f);if(keys.KeyS)drive.sub(f);if(keys.KeyD)drive.add(r);if(keys.KeyA)drive.sub(r);
@@ -341,7 +459,16 @@ function updatePhysics(dt){
   vel.multiplyScalar(Math.max(0,1-.12*dt));
  }
  for(let i=0;i<crates.length;i++)for(let j=i+1;j<crates.length;j++){const a=crates[i],b=crates[j];if(a===heldCrate||b===heldCrate)continue;const dx=b.position.x-a.position.x,dz=b.position.z-a.position.z,d=Math.hypot(dx,dz);if(d>0&&d<1.18){const nx=dx/d,nz=dz/d,o=(1.18-d)*.5;a.position.x-=nx*o;b.position.x+=nx*o;a.position.z-=nz*o;b.position.z+=nz*o}}
- for(const w of welds){if(crates.includes(w.a)&&crates.includes(w.b)){w.b.position.copy(w.a.position).add(w.offset);w.b.userData.velocity.copy(w.a.userData.velocity)}}
+ for(let i=welds.length-1;i>=0;i--){const w=welds[i];if(crates.includes(w.a)&&crates.includes(w.b)){const stress=w.a.userData.velocity.distanceTo(w.b.userData.velocity);if(stress>22){welds.splice(i,1);say('A stressed weld snapped!')}else{w.b.position.copy(w.a.position).add(w.offset);w.b.userData.velocity.copy(w.a.userData.velocity)}}}
+ for(let i=structuralLinks.length-1;i>=0;i--){const link=structuralLinks[i];if(!crates.includes(link.a)||!crates.includes(link.b)){scene.remove(link.line);structuralLinks.splice(i,1);continue}
+  const a=link.a.position.clone().add(new THREE.Vector3(0,.35,0)),b=link.b.position.clone().add(new THREE.Vector3(0,.35,0)),d=a.distanceTo(b);
+  link.line.geometry.dispose();link.line.geometry=new THREE.BufferGeometry().setFromPoints([a,b]);
+  if((link.type==='rope'&&d>link.length*1.65)||(link.type==='hinge'&&d>link.rest+3.5)){scene.remove(link.line);link.line.geometry.dispose();link.line.material.dispose();structuralLinks.splice(i,1);say(link.type.toUpperCase()+' snapped under stress');}
+  else if(link.type==='rope'&&d>link.length&&d>0){const pull=b.sub(a).normalize().multiplyScalar((d-link.length)*.5);link.a.position.add(pull);link.b.position.sub(pull)}
+ }
+ for(const link of logicLinks){const p=[link.source.getWorldPosition(new THREE.Vector3()),link.motor.getWorldPosition(new THREE.Vector3())];link.line.geometry.dispose();link.line.geometry=new THREE.BufferGeometry().setFromPoints(p);const active=link.source.userData.vehiclePart==='switch'?link.source.userData.on:!!link.source.userData.active;link.motor.userData.active=active;if(active){const root=link.motor.userData.root;if(root&&crates.includes(root)){root.userData.velocity.x+=-Math.sin(yaw)*dt*5;root.userData.velocity.z+=-Math.cos(yaw)*dt*5}}}
+ for(const root of crates){for(const part of root.children){if(part.userData.vehiclePart==='motor'&&part.userData.rotor&&part.userData.active)part.userData.rotor.rotation.x+=dt*12;if(part.userData.vehiclePart==='gear'&&part.userData.rotor)part.userData.rotor.rotation.z+=dt*2}}
+ updateFire(dt);
  for(const wire of vehicleWires){const points=[wire.engine.getWorldPosition(new THREE.Vector3()),wire.wheel.getWorldPosition(new THREE.Vector3())];wire.line.geometry.dispose();wire.line.geometry=new THREE.BufferGeometry().setFromPoints(points)}
  if(drivingRoot&&vehiclePowered(drivingRoot)){const parts=drivingRoot.userData.vehicleParts;for(const wheel of parts.wheels)wheel.rotation.x-=Math.hypot(drivingRoot.userData.velocity.x,drivingRoot.userData.velocity.z)*dt*1.8}
  for(const f of treeFalls){if(f.angle<Math.PI/2){const step=Math.min(Math.PI/2-f.angle,dt*1.4);f.tree.group.rotateOnWorldAxis(f.axis,step);f.angle+=step}}
@@ -415,15 +542,21 @@ document.addEventListener('keydown',e=>{
  if(e.code==='KeyR'&&locked)reload();
  if(e.code==='KeyQ'&&locked)dropCrate();
  if(e.code==='KeyF'&&locked)tryUseSeat();
+ if(e.code==='Digit0')selectSlot(10);
  if(/^Digit[1-9]$/.test(e.code)){
   const n=Number(e.code.slice(5));selectSlot(n);
  }
 });
 document.addEventListener('keyup',e=>keys[e.code]=false);
+document.addEventListener('mouseup',e=>{if(e.button===0)mouseHeld=false});
+let mouseHeld=false;
+document.addEventListener('wheel',e=>{if(!locked)return;selectSlot(((selectedSlot-1+(e.deltaY>0?1:17))%18)+1)},{passive:true});
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('mousedown',e=>{
  if(!locked)return;
+ if(e.button===0){mouseHeld=true;if(selectedSlot===18){extinguishNearAim();return}}
  if(e.button===0){
+  if(selectedSlot===18){return}
   if(buildMode) {
    const hit=getAimHit();
    if(hit)placeCrate(hit.point);else say('Aim at a surface to place a crate');
@@ -436,6 +569,9 @@ document.addEventListener('mousedown',e=>{
   else if(selectedSlot===7)addVehiclePart("engine");
   else if(selectedSlot===8)addVehiclePart("wheel");
   else if(selectedSlot===9)useWireTool();
+  else if(selectedSlot===10)toggleSwitch();
+  else if(selectedSlot===11||selectedSlot===12||selectedSlot===13||selectedSlot===14||selectedSlot===17)addCircuitPart(({11:'sensor',12:'motor',13:'gear',14:'beam',17:'glass'})[selectedSlot]);
+  else if(selectedSlot===15||selectedSlot===16)connectStructure(selectedSlot===15?'hinge':'rope');
  } else if(e.button===2){
   const hit=getAimHit();
   if(hit){
@@ -454,6 +590,7 @@ const clock=new THREE.Clock();
 function animate(){
  requestAnimationFrame(animate);
  const dt=Math.min(clock.getDelta(),.04);
+ if(locked&&selectedSlot===18&&mouseHeld)extinguishNearAim();
  if(locked&&!driverSeat){
   const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
   const r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
