@@ -215,6 +215,7 @@ function surfaceNormal(hit){
  return normal;
 }
 function surfacePlacement(hit,offset=.61){return hit.point.clone().addScaledVector(surfaceNormal(hit),offset)}
+function freePartSurfaceOffset(type){return ({seat:-.64,engine:-.29,wheel:.54,switch:-.33,sensor:-.32,motor:-.225,gear:-.08,beam:-.51,glass:-.55})[type]??.02}
 function placeCrate(hit){
  const point=surfacePlacement(hit,.61),x=point.x,z=point.z;
  const m=new THREE.Mesh(crateGeo,mat.wood.clone());
@@ -250,7 +251,7 @@ function addVehiclePart(type){
  if(type==='seat'){
   const base=new THREE.Mesh(new THREE.BoxGeometry(.72,.16,.72),new THREE.MeshStandardMaterial({color:0x343d43,roughness:.75}));base.position.y=.72;group.add(base);
   const back=new THREE.Mesh(new THREE.BoxGeometry(.72,.8,.14),new THREE.MeshStandardMaterial({color:0x48545b,roughness:.8}));back.position.set(0,1.15,.28);group.add(back);
-  if(root)group.position.set(0,.6,0);else group.position.copy(surfacePlacement(hit,.02));if(parts)parts.seat=group;
+  if(root)group.position.set(0,.6,0);else group.position.copy(surfacePlacement(hit,freePartSurfaceOffset(type)));if(parts)parts.seat=group;
  }else if(type==='engine'){
   const body=new THREE.Mesh(new THREE.BoxGeometry(.68,.52,.72),new THREE.MeshStandardMaterial({color:0x5b6870,metalness:.7,roughness:.4}));body.position.y=.55;group.add(body);
   const cap=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.16,12),new THREE.MeshStandardMaterial({color:0xc18b42,metalness:.55,roughness:.4}));cap.position.y=.9;group.add(cap);
@@ -288,7 +289,7 @@ function addCircuitPart(type){
  const hit=getAimHit(),root=findAimedCrate();
  if(!hit){say('Aim at a surface to place this part');return}
  const group=new THREE.Group();group.userData.vehiclePart=type;group.userData.root=root;group.userData.grabbable=true;
- if(root){root.userData.vehicleParts=root.userData.vehicleParts||{seat:null,engine:null,wheels:[]};group.position.set(0,.62,0)}else group.position.copy(surfacePlacement(hit,.02));
+ if(root){root.userData.vehicleParts=root.userData.vehicleParts||{seat:null,engine:null,wheels:[]};group.position.set(0,.62,0)}else group.position.copy(surfacePlacement(hit,freePartSurfaceOffset(type)));
  const metal=new THREE.MeshStandardMaterial({color:0x59666a,metalness:.65,roughness:.42});
  if(type==='switch'){
   const base=new THREE.Mesh(new THREE.BoxGeometry(.55,.18,.48),metal);base.position.y=.42;group.add(base);
@@ -422,7 +423,7 @@ function useWeldTool(){
 }
 function attachThruster(){
  const hit=getAimHit(),m=findAimedCrate();if(!hit){say('Aim at a surface to place a thruster');return}
- if(!m){const group=new THREE.Group();group.userData.grabbable=true;const body=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,.65,8),new THREE.MeshStandardMaterial({color:0x66747b,metalness:.65,roughness:.4}));body.rotation.x=Math.PI/2;body.castShadow=true;group.add(body);const nozzle=new THREE.Mesh(new THREE.ConeGeometry(.17,.3,8),new THREE.MeshStandardMaterial({color:0xd5a65e,metalness:.45,roughness:.5}));nozzle.rotation.x=-Math.PI/2;nozzle.position.z=.43;group.add(nozzle);group.position.copy(surfacePlacement(hit,.08));scene.add(group);say('Thruster placed freely');return}
+ if(!m){const group=new THREE.Group();group.userData.grabbable=true;const body=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,.65,8),new THREE.MeshStandardMaterial({color:0x66747b,metalness:.65,roughness:.4}));body.rotation.x=Math.PI/2;body.castShadow=true;group.add(body);const nozzle=new THREE.Mesh(new THREE.ConeGeometry(.17,.3,8),new THREE.MeshStandardMaterial({color:0xd5a65e,metalness:.45,roughness:.5}));nozzle.rotation.x=-Math.PI/2;nozzle.position.z=.43;group.add(nozzle);group.position.copy(surfacePlacement(hit,.23));scene.add(group);say('Thruster placed freely');return}
  if(m.userData.thruster){say('This crate already has a thruster');return}
  m.userData.thruster=true;
  const body=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,.65,8),new THREE.MeshStandardMaterial({color:0x66747b,metalness:.65,roughness:.4}));
