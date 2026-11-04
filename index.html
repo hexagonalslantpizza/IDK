@@ -19,7 +19,7 @@ canvas{display:block}
 #hotbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:3px;pointer-events:auto;max-width:calc(100vw - 24px);overflow-x:auto;padding:2px}
 .slot{flex:0 0 43px;width:43px;height:48px;padding:3px;background:#111a15df;border:1px solid #ffffff55;border-radius:7px;color:#eaf0e8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10px}
 .slot .num{align-self:flex-start;font-size:9px;color:#c2d0c2;line-height:1}
-.slot .item{font-size:11px;font-weight:800}
+.slot .item{font-size:11px;font-weight:800;white-space:nowrap}.slot[data-slot="4"]{flex-basis:72px;width:72px}.slot[data-slot="4"] .item{font-size:9px}
 .slot.selected{outline:2px solid #c5e39e;background:#344b32}
 #overlay,#buildMenu{position:fixed;inset:0;display:none;place-items:center;background:#101713c9;z-index:5}
 #panel{width:min(460px,calc(100% - 32px));padding:25px;border:1px solid #ffffff30;border-radius:15px;background:#1b2920;box-shadow:0 20px 70px #0009}
@@ -36,7 +36,7 @@ input[type=range]{width:100%;accent-color:#b9d397}
 .menuActions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}
 .buildTools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:15px 0;max-height:240px;overflow:auto}
 .buildTool{padding:9px 5px;font-size:11px;background:#35483a;color:#edf3e9;border:1px solid #ffffff28}
-.buildTool.selected{background:#b9d397;color:#172016;outline:2px solid #d8efb8}
+.buildTool.selected{background:#b9d397;color:#172016;outline:2px solid #d8efb8}#buildMenu #panel{max-height:calc(100vh - 28px);overflow:auto}#buildMenu p,#buildMenu small{display:none}
 #jumpValue{font-weight:800;color:#d5e8bd}
 @media(max-width:900px){#top{top:8px;left:8px;gap:4px}#top .pill{font-size:9px;padding:6px}#mode{top:65px;right:8px}#hotbar{top:8px;gap:2px;max-width:calc(100vw - 12px)}.slot{flex-basis:37px;width:37px;height:42px;font-size:9px}.slot .item{font-size:8px}#help{left:8px;bottom:8px;font-size:10px}#ammo{right:8px;bottom:8px}}
 </style>
@@ -48,13 +48,13 @@ input[type=range]{width:100%;accent-color:#b9d397}
   <button class="slot selected" data-slot="1"><span class="num">1</span><span class="item">PISTOL</span></button>
   <button class="slot" data-slot="2"><span class="num">2</span><span class="item">GRAB</span></button>
   <button class="slot" data-slot="3"><span class="num">3</span><span class="item">WELD</span></button>
-  <button class="slot" data-slot="4"><span class="num">4</span><span class="item">FIRE EXTINGUISHER</span></button>
+  <button class="slot" data-slot="4"><span class="num">4</span><span class="item">EXTINGUISHER</span></button>
  </div>
  <div id="mode" class="pill">MODE: <b id="modeState">PISTOL</b></div>
  <div id="crosshair"></div>
  <div id="ammo" class="pill">12 / 48</div>
  <div id="notice" class="pill"></div>
- <div id="help" class="pill"><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Shift</b> sprint<br><b>1</b> pistol · <b>2</b> grab/drop · <b>3</b> weld crates · <b>4</b> thruster<br><b>5</b> bomb · <b>6</b> seat · <b>7</b> engine · <b>8</b> wheel<br><b>1</b> pistol · <b>2</b> grab · <b>3</b> weld · <b>4</b> fire extinguisher<br><b>B</b> open build menu · <b>F</b> sit/exit · <b>Q</b> drop · <b>R</b> reload · <b>E</b> fire thruster</div>
+ <div id="help" class="pill"><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Shift</b> sprint<br><b>1</b> pistol · <b>2</b> grab · <b>3</b> weld · <b>4</b> extinguisher<br><b>B</b> build menu · <b>F</b> seat · <b>Q</b> drop · <b>R</b> reload · <b>E</b> thruster</div>
 </div>
 <div id="overlay">
  <div id="panel"><h1>IDK — Sandbox PVP</h1><div class="pill" style="display:inline-block">DEMO 002 · MOVEMENT + BUILDING + HOTBAR</div><p>Explore the low-poly test area, place crates where you're aiming, and try the new hotbar and arcade pistol. This is still a single-player prototype.</p><button id="enter">ENTER WORLD</button><small>Click to lock the mouse. Three.js is included locally, so the game does not need an internet connection.</small></div>
@@ -62,8 +62,6 @@ input[type=range]{width:100%;accent-color:#b9d397}
 <div id="buildMenu">
  <div id="panel">
   <h2>Build menu</h2>
-  <p>Choose a construction tool, then press DONE and use it in the world. These tools stay in the build menu, not the hotbar.</p>
-  <div class="pill">SELECTED BUILD ITEM: <b id="selectedBuildLabel">WOODEN CRATE</b></div>
   <div id="buildTools" class="buildTools">
    <button class="buildTool selected" data-build="crate">WOODEN CRATE</button>
    <button class="buildTool" data-build="thruster">THRUSTER</button>
@@ -83,7 +81,6 @@ input[type=range]{width:100%;accent-color:#b9d397}
   </div>
   <div class="menuRow"><label for="jumpHeight">Jump height</label><span id="jumpValue">7.2</span></div>
   <input id="jumpHeight" type="range" min="4" max="12" step="0.2" value="7.2">
-  <small>Higher values make your character jump higher. This setting is saved for this session.</small>
   <div class="menuActions">
    <button id="doneBuild">DONE — RETURN TO WORLD</button>
    <button id="exitBuild" class="secondary">EXIT BUILD MODE</button>
@@ -178,7 +175,7 @@ const crateGeo=new THREE.BoxGeometry(1.2,1.2,1.2);
 const keys={};
 let yaw=0,pitch=0,locked=false,started=false,buildMode=false,buildMenuOpen=false,vy=0,onGround=false;
 let selectedSlot=1,selectedBuildTool='crate',jumpVelocity=7.2,ammo=12,reserveAmmo=48,lastShot=0,reloading=false;
-let heldCrate=null,weldTarget=null;
+let heldCrate=null,heldFreeObject=null,weldTarget=null;
 const welds=[],bombs=[],vehicleWires=[],logicLinks=[],structuralLinks=[],fires=[],sprayEffects=[],glassShards=[];
 let wireSource=null,driverSeat=null,drivingRoot=null;
 const magazineSize=12,shotCooldown=300;
@@ -204,7 +201,7 @@ function selectSlot(n){
  document.querySelectorAll('.slot').forEach(b=>b.classList.toggle('selected',Number(b.dataset.slot)===n));
  updateMode();
  wireSource=null;
- if(n!==2&&heldCrate)dropCrate();
+ if(n!==2&&(heldCrate||heldFreeObject))dropCrate();
  weldTarget=null;
 }
 document.querySelectorAll('.slot').forEach(b=>{
@@ -213,14 +210,15 @@ document.querySelectorAll('.slot').forEach(b=>{
   if(started&&!buildMenuOpen&&!locked)renderer.domElement.requestPointerLock();
  });
 });
-function placeCrate(point){
- const x=point.x,z=point.z;
- if(Math.hypot(x-player.x,z-player.z)<1.35){say('Too close to place a crate');return}
- for(const o of obstacles){
-  if((x-o.x)**2+(z-o.z)**2<(o.r+.78)**2){say('That spot is blocked');return}
- }
+function surfaceNormal(hit){
+ const normal=hit.face?hit.face.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize():new THREE.Vector3(0,1,0);
+ return normal;
+}
+function surfacePlacement(hit,offset=.61){return hit.point.clone().addScaledVector(surfaceNormal(hit),offset)}
+function placeCrate(hit){
+ const point=surfacePlacement(hit,.61),x=point.x,z=point.z;
  const m=new THREE.Mesh(crateGeo,mat.wood.clone());
- m.position.set(x,.6,z);m.castShadow=true;m.receiveShadow=true;m.userData.velocity=new THREE.Vector3();m.userData.thruster=false;m.userData.burnable=true;scene.add(m);
+ m.position.copy(point);m.castShadow=true;m.receiveShadow=true;m.userData.velocity=new THREE.Vector3();m.userData.thruster=false;m.userData.burnable=true;scene.add(m);
  crates.push(m);obstacles.push({x,z,r:.82,mesh:m});say('Crate placed');
 }
 function removeCrate(m){
@@ -286,9 +284,10 @@ function useWireTool(){
  say('Connect engine to wheel, or switch/sensor to motor');
 }
 function addCircuitPart(type){
- const root=findAimedCrate();if(!root){say('Aim at a crate to attach this part');return}
- root.userData.vehicleParts=root.userData.vehicleParts||{seat:null,engine:null,wheels:[]};
- const group=new THREE.Group();group.userData.vehiclePart=type;group.userData.root=root;group.position.set(0,.62,0);
+ const hit=getAimHit(),root=findAimedCrate();
+ if(!hit){say('Aim at a surface to place this part');return}
+ const group=new THREE.Group();group.userData.vehiclePart=type;group.userData.root=root;group.userData.grabbable=true;
+ if(root){root.userData.vehicleParts=root.userData.vehicleParts||{seat:null,engine:null,wheels:[]};group.position.set(0,.62,0)}else group.position.copy(surfacePlacement(hit,.02));
  const metal=new THREE.MeshStandardMaterial({color:0x59666a,metalness:.65,roughness:.42});
  if(type==='switch'){
   const base=new THREE.Mesh(new THREE.BoxGeometry(.55,.18,.48),metal);base.position.y=.42;group.add(base);
@@ -303,11 +302,12 @@ function addCircuitPart(type){
   const gear=new THREE.Mesh(new THREE.TorusGeometry(.38,.09,6,12),new THREE.MeshStandardMaterial({color:0xb1a16f,metalness:.75,roughness:.35}));gear.position.y=.55;group.add(gear);group.userData.rotor=gear;
   const hub=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.18,10),metal);hub.position.y=.55;group.add(hub);
  }else if(type==='beam'){
-  const beam=new THREE.Mesh(new THREE.BoxGeometry(3.2,.22,.24),mat.wood.clone());beam.position.y=.62;beam.castShadow=true;beam.receiveShadow=true;beam.userData.burnable=true;group.add(beam);group.userData.burnable=true;
+  const beam=new THREE.Mesh(new THREE.BoxGeometry(3.2,.22,.24),mat.wood.clone());beam.position.y=.62;beam.castShadow=true;beam.receiveShadow=true;beam.userData.burnable=true;group.add(beam);group.userData.burnable=true;group.userData.grabbable=true;
  }else if(type==='glass'){
-  const glass=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.4,.12),new THREE.MeshPhysicalMaterial({color:0x9bd5df,transparent:true,opacity:.34,roughness:.08,metalness:0,transmission:.25}));glass.position.y=1.25;glass.castShadow=true;group.add(glass);group.userData.glass=true;
+  const glass=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.4,.12),new THREE.MeshPhysicalMaterial({color:0x9bd5df,transparent:true,opacity:.34,roughness:.08,metalness:0,transmission:.25}));glass.position.y=1.25;glass.castShadow=true;group.add(glass);group.userData.glass=true;group.userData.grabbable=true;
  }
- root.add(group);say(type.toUpperCase()+' attached');
+ if(root)root.add(group);else scene.add(group);
+ if(!root&&['switch','sensor','motor','gear'].includes(type))say(type.toUpperCase()+' placed freely (not connected to a vehicle)');else say(type.toUpperCase()+(root?' attached':' placed'));
 }
 function connectStructure(type){
  const root=findAimedCrate();if(!root){say('Aim at a crate');return}
@@ -397,11 +397,19 @@ function findAimedCrate(){
  let obj=hit.object;while(obj&&!crates.includes(obj))obj=obj.parent;
  return obj&&crates.includes(obj)?obj:null;
 }
-function dropCrate(){if(!heldCrate)return;heldCrate.userData.velocity.set(0,-1,0);heldCrate=null;say('Crate dropped')}
+function dropCrate(){
+ if(heldCrate){heldCrate.userData.velocity.set(0,-1,0);heldCrate=null;say('Object dropped');return}
+ if(heldFreeObject){heldFreeObject=null;say('Object dropped')}
+}
 function useGrabTool(){
- if(heldCrate){dropCrate();return}
- const m=findAimedCrate();if(!m){say('Aim at a crate to grab it');return}
- heldCrate=m;m.userData.velocity.set(0,0,0);say('Crate grabbed — click or Q to drop');
+ if(heldCrate||heldFreeObject){dropCrate();return}
+ const hit=getAimHit();if(!hit){say('Aim at an object to grab it');return}
+ let obj=hit.object;
+ while(obj&&obj!==scene&&!crates.includes(obj)&&!obj.userData.grabbable)obj=obj.parent;
+ if(!obj||obj===scene){say('That object cannot be grabbed');return}
+ if(crates.includes(obj)){heldCrate=obj;obj.userData.velocity.set(0,0,0)}
+ else heldFreeObject=obj;
+ say('Object grabbed — click or Q to drop');
 }
 function useWeldTool(){
  const m=findAimedCrate();if(!m){say('Aim at a crate to weld it');return}
@@ -480,17 +488,35 @@ function updatePhysics(dt){
  }else if(drivingRoot&&!vehiclePowered(drivingRoot)){driverSeat=null;drivingRoot=null;say("Vehicle needs an engine wired to at least two wheels")}
  for(const m of crates){
   const vel=m.userData.velocity;
-  if(m===heldCrate){const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);m.position.lerp(camera.position.clone().addScaledVector(forward,3.2),.28);vel.set(0,0,0);continue}
+  if(m===heldCrate){
+   const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+   const probe=new THREE.Raycaster(camera.position,forward,0,3.2).intersectObjects([ground,...crates.filter(c=>c!==m)],true)[0];
+   const distance=probe?Math.max(1.1,probe.distance-.72):3.2;
+   const desired=camera.position.clone().addScaledVector(forward,distance);desired.y=Math.max(.6,desired.y);
+   m.position.lerp(desired,.35);vel.set(0,0,0);continue
+  }
   if(selectedSlot===4&&keys.KeyE&&m.userData.thruster&&findAimedCrate()===m){const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);vel.addScaledVector(forward,20*dt)}
-  vel.y-=15*dt;m.position.addScaledVector(vel,dt);
-  if(m.position.y<.6){m.position.y=.6;if(vel.y<0)vel.y*=-.18;vel.x*=.985;vel.z*=.985}
+  const previousY=m.position.y;vel.y-=15*dt;m.position.addScaledVector(vel,dt);
+  let floorY=.6;
+  for(const other of crates){if(other===m||other===heldCrate)continue;
+   const overlapX=Math.abs(m.position.x-other.position.x)<1.18,overlapZ=Math.abs(m.position.z-other.position.z)<1.18,top=other.position.y+.6;
+   if(overlapX&&overlapZ&&vel.y<=0&&previousY>=top-.04&&m.position.y<=top)floorY=Math.max(floorY,top);
+  }
+  if(m.position.y<floorY){m.position.y=floorY;if(vel.y<0)vel.y=0;vel.x*=.985;vel.z*=.985}
   if(Math.hypot(vel.x,vel.z)>18){for(const part of [...m.children])if(part.userData.glass)shatterGlass(m,part);else if(part.userData.burnable)splinterBeam(m,part)}
   for(const t of trees){if(t.fallen)continue;const dx=m.position.x-t.x,dz=m.position.z-t.z,d=Math.hypot(dx,dz),assembly=getWeldedAssembly(m);if(d<t.r+.68&&assembly.length>=2&&Math.hypot(vel.x,vel.z)>8){t.fallen=true;const axis=new THREE.Vector3(-dz,0,dx).normalize();treeFalls.push({tree:t,axis,angle:0});const oi=obstacles.findIndex(o=>o.tree===t);if(oi>=0)obstacles.splice(oi,1);say("WELDED ASSEMBLY knocked down a tree!")}}
-  for(const o of obstacles){if(o.mesh===m||o.tree)continue;const dx=m.position.x-o.x,dz=m.position.z-o.z,d=Math.hypot(dx,dz),min=o.r+.68;if(d>0&&d<min){const nx=dx/d,nz=dz/d;m.position.x=o.x+nx*min;m.position.z=o.z+nz*min;const push=vel.x*nx+vel.z*nz;if(push<0){vel.x-=1.35*push*nx;vel.z-=1.35*push*nz}}}
+  for(const o of obstacles){if(o.mesh===m||o.tree)continue;if(o.mesh&&Math.abs(m.position.y-o.mesh.position.y)>=1.18)continue;const dx=m.position.x-o.x,dz=m.position.z-o.z,d=Math.hypot(dx,dz),min=o.r+.68;if(d>0&&d<min){const nx=dx/d,nz=dz/d;m.position.x=o.x+nx*min;m.position.z=o.z+nz*min;const push=vel.x*nx+vel.z*nz;if(push<0){vel.x-=1.35*push*nx;vel.z-=1.35*push*nz}}}
   const obstacle=obstacles.find(o=>o.mesh===m);if(obstacle){obstacle.x=m.position.x;obstacle.z=m.position.z}
   vel.multiplyScalar(Math.max(0,1-.12*dt));
  }
- for(let i=0;i<crates.length;i++)for(let j=i+1;j<crates.length;j++){const a=crates[i],b=crates[j];if(a===heldCrate||b===heldCrate)continue;const dx=b.position.x-a.position.x,dz=b.position.z-a.position.z,d=Math.hypot(dx,dz);if(d>0&&d<1.18){const nx=dx/d,nz=dz/d,o=(1.18-d)*.5;a.position.x-=nx*o;b.position.x+=nx*o;a.position.z-=nz*o;b.position.z+=nz*o}}
+ if(heldFreeObject){
+  const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+  const probe=new THREE.Raycaster(camera.position,forward,0,3.2).intersectObjects([ground,...crates],true)[0];
+  const distance=probe?Math.max(1.1,probe.distance-.55):3.2;
+  const desired=camera.position.clone().addScaledVector(forward,distance);desired.y=Math.max(.08,desired.y);
+  heldFreeObject.position.lerp(desired,.35);
+ }
+ for(let i=0;i<crates.length;i++)for(let j=i+1;j<crates.length;j++){const a=crates[i],b=crates[j];if(a===heldCrate||b===heldCrate||Math.abs(a.position.y-b.position.y)>=1.18)continue;const dx=b.position.x-a.position.x,dz=b.position.z-a.position.z,d=Math.hypot(dx,dz);if(d>0&&d<1.18){const nx=dx/d,nz=dz/d,o=(1.18-d)*.5;a.position.x-=nx*o;b.position.x+=nx*o;a.position.z-=nz*o;b.position.z+=nz*o}}
  for(let i=welds.length-1;i>=0;i--){const w=welds[i];if(crates.includes(w.a)&&crates.includes(w.b)){const stress=w.a.userData.velocity.distanceTo(w.b.userData.velocity);if(stress>22){welds.splice(i,1);say('A stressed weld snapped!')}else{w.b.position.copy(w.a.position).add(w.offset);w.b.userData.velocity.copy(w.a.userData.velocity)}}}
  for(let i=structuralLinks.length-1;i>=0;i--){const link=structuralLinks[i];if(!crates.includes(link.a)||!crates.includes(link.b)){scene.remove(link.line);structuralLinks.splice(i,1);continue}
   const a=link.a.position.clone().add(new THREE.Vector3(0,.35,0)),b=link.b.position.clone().add(new THREE.Vector3(0,.35,0)),d=a.distanceTo(b);
@@ -551,7 +577,7 @@ document.querySelectorAll('.buildTool').forEach(button=>{
  });
 });
 function useSelectedBuildTool(){
- if(selectedBuildTool==='crate'){const hit=getAimHit();if(hit)placeCrate(hit.point);else say('Aim at a surface to place a crate');}
+ if(selectedBuildTool==='crate'){const hit=getAimHit();if(hit)placeCrate(hit);else say('Aim at a surface to place a crate');}
  else if(selectedBuildTool==='thruster')attachThruster();
  else if(selectedBuildTool==='bomb')placeArcadeBomb();
  else if(['seat','engine','wheel'].includes(selectedBuildTool))addVehiclePart(selectedBuildTool);
@@ -621,7 +647,8 @@ document.addEventListener('mousedown',e=>{
 });
 function blocked(x,z){
  if(Math.abs(x)>86||Math.abs(z)>86)return true;
- for(const o of obstacles)if((x-o.x)**2+(z-o.z)**2<(o.r+player.r)**2)return true;
+ const feet=camera.position.y-1.7;
+ for(const o of obstacles){if(o.mesh&&feet>=o.mesh.position.y+.58)continue;if((x-o.x)**2+(z-o.z)**2<(o.r+player.r)**2)return true}
  return false;
 }
 const clock=new THREE.Clock();
@@ -640,8 +667,13 @@ function animate(){
   if(!blocked(nx,player.z))player.x=nx;
   if(!blocked(player.x,nz))player.z=nz;
   if(keys.Space&&onGround){vy=jumpVelocity;onGround=false}
+  const previousFeet=camera.position.y-1.7;
   vy-=19*dt;camera.position.y+=vy*dt;
-  if(camera.position.y<=1.7){camera.position.y=1.7;vy=0;onGround=true}
+  let landingHeight=0;
+  if(vy<=0){for(const crate of crates){const top=crate.position.y+.6;
+   if(Math.abs(player.x-crate.position.x)<.82&&Math.abs(player.z-crate.position.z)<.82&&previousFeet>=top-.08&&camera.position.y-1.7<=top)landingHeight=Math.max(landingHeight,top);
+  }}
+  if(camera.position.y-1.7<=landingHeight){camera.position.y=landingHeight+1.7;vy=0;onGround=true}else onGround=false;
   camera.position.x=player.x;camera.position.z=player.z;
  }
  if(driverSeat&&drivingRoot)camera.position.set(drivingRoot.position.x,drivingRoot.position.y+2.3,drivingRoot.position.z+.1);
