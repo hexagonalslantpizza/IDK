@@ -7,7 +7,7 @@ A browser-based 3D low-poly sandbox/PVP prototype.
 Current features:
 - First-person movement and mouse look
 - Low-poly outdoor test map
-- Nine-slot hotbar
+- Eighteen-slot hotbar
 - Arcade pistol and reload
 - Build menu and crate placement
 - Dynamic crates with basic gravity and collision
@@ -42,16 +42,16 @@ Current features:
 - 7: attach an engine to an aimed-at crate
 - 8: attach up to four wheels to an aimed-at crate
 - 9: wire tool: connect engine to wheels, switches/sensors to motors, or motors to gears
-- 0: select a switch and click it to toggle on/off
+- 0 / slot 10: place a switch on a crate; click an existing switch to toggle it
 - Mouse wheel: cycle through all 18 tools
-- 11: sensor; attach to a crate to detect nearby crates
-- 12: motor; connect a switch or sensor to activate it
-- 13: gear; connect it to a motor to make it rotate
-- 14: wooden beam; attach it to a crate frame
-- 15: hinge; click two crate frames to connect them
-- 16: rope; click two crate frames to connect them
-- 17: glass panel; attach it to a crate frame
-- 18: fire extinguisher; hold left click while aiming toward a fire
+- Slot 11: sensor; attach to a crate to detect nearby crates
+- Slot 12: motor; connect a switch or sensor to activate it
+- Slot 13: gear; connect it to a motor to make it rotate
+- Slot 14: wooden beam; attach it to a crate frame
+- Slot 15: hinge; click two crate frames to connect them
+- Slot 16: rope; click two crate frames to connect them
+- Slot 17: glass panel; attach it to a crate frame
+- Slot 18: fire extinguisher; hold left click while aiming toward a fire
 - F: sit in an aimed-at seat or exit the current seat
 - Q: drop a held crate
 - R: reload
