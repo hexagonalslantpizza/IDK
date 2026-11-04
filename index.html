@@ -141,7 +141,7 @@ function tree(x,z,s){
   const c=new THREE.Mesh(new THREE.ConeGeometry(1.45-i*.2,2.4,7),mat.leaves[((i+Math.floor(x+z+20)+9)%3+3)%3]);
   c.position.y=2.8+i*.72;c.castShadow=true;g.add(c);
  }
- scene.add(g);const treeData={group:g,x,z,r:.72*s,fallen:false};trees.push(treeData);obstacles.push({x,z,r:.72*s,tree:treeData});
+ scene.add(g);const treeData={group:g,x,z,r:.72*s,fallen:false,userData:{}};trees.push(treeData);obstacles.push({x,z,r:.72*s,tree:treeData});
 }
 function rock(x,z,s){
  const m=new THREE.Mesh(new THREE.DodecahedronGeometry(1,0),mat.rocks[Math.abs(Math.floor(x*3+z*7))%3]);
@@ -173,7 +173,7 @@ const keys={};
 let yaw=0,pitch=0,locked=false,started=false,buildMode=false,buildMenuOpen=false,vy=0,onGround=false;
 let selectedSlot=1,jumpVelocity=7.2,ammo=12,reserveAmmo=48,lastShot=0,reloading=false;
 let heldCrate=null,weldTarget=null;
-const welds=[],bombs=[],vehicleWires=[],logicLinks=[],structuralLinks=[],fires=[],sprayEffects=[];
+const welds=[],bombs=[],vehicleWires=[],logicLinks=[],structuralLinks=[],fires=[],sprayEffects=[],glassShards=[];
 let wireSource=null,driverSeat=null,drivingRoot=null;
 const magazineSize=12,shotCooldown=300;
 const overlay=document.getElementById('overlay');
@@ -262,7 +262,7 @@ function addVehiclePart(type){
 function useWireTool(){
  const part=findAimedPart();if(!part){say('Aim at a circuit part, engine, or wheel');return}
  if(!wireSource){
-  if(!['engine','switch','sensor'].includes(part.userData.vehiclePart)){say('Start with an engine, switch, or sensor');return}
+  if(!['engine','switch','sensor','motor'].includes(part.userData.vehiclePart)){say('Start with an engine, switch, or sensor');return}
   wireSource=part;say('Source selected — click a wheel or motor');return;
  }
  const source=wireSource;wireSource=null;
@@ -272,7 +272,7 @@ function useWireTool(){
   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([source.getWorldPosition(new THREE.Vector3()),part.getWorldPosition(new THREE.Vector3())]),new THREE.LineBasicMaterial({color:0x70d9c9}));
   scene.add(line);vehicleWires.push({engine:source,wheel:part,line});say('Engine wired to wheel');return;
  }
- if(['switch','sensor'].includes(source.userData.vehiclePart)&&part.userData.vehiclePart==='motor'){
+ if((['switch','sensor'].includes(source.userData.vehiclePart)&&part.userData.vehiclePart==='motor')||(source.userData.vehiclePart==='motor'&&part.userData.vehiclePart==='gear')){
   if(logicLinks.some(w=>w.source===source&&w.motor===part)){say('Already connected');return}
   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([source.getWorldPosition(new THREE.Vector3()),part.getWorldPosition(new THREE.Vector3())]),new THREE.LineBasicMaterial({color:0xf0d36b}));
   scene.add(line);logicLinks.push({source,motor:part,line});say('Logic signal connected to motor');return;
@@ -316,7 +316,7 @@ function connectStructure(type){
 function toggleSwitch(){
  const part=findAimedPart();if(!part||part.userData.vehiclePart!=='switch'){say('Aim at a switch to toggle it');return}
  part.userData.on=!part.userData.on;
- if(part.userData.lever)part.userData.lever.rotation.z=part.userData.on?.35:-.35;
+ if(part.userData.lever)part.userData.lever.rotation.z=part.userData.on ? .35 : -.35;
  say(part.userData.on?'Switch ON':'Switch OFF');
 }
 function updateSensorStates(){
@@ -354,6 +354,7 @@ function extinguishNearAim(){
  if(count)say('Fire extinguished');
 }
 function updateFire(dt){
+ for(let i=glassShards.length-1;i>=0;i--){const sh=glassShards[i];sh.life-=dt;sh.velocity.y-=12*dt;sh.mesh.position.addScaledVector(sh.velocity,dt);sh.mesh.rotation.x+=dt*5;sh.mesh.rotation.z+=dt*4;if(sh.life<=0){scene.remove(sh.mesh);sh.mesh.geometry.dispose();sh.mesh.material.dispose();glassShards.splice(i,1)}}
  for(let i=fires.length-1;i>=0;i--){
   const f=fires[i];f.time+=dt;
   const p=f.type==='tree'?f.target.group.position:f.target.position;
@@ -424,6 +425,22 @@ function placeArcadeBomb(){
 }
 function arcadeBlast(bomb){
  const center=bomb.mesh.position.clone();scene.remove(bomb.mesh);bomb.mesh=null;
+ for(const root of [...crates]){
+  const distance=root.position.distanceTo(center);
+  if(distance<9){
+   for(const part of [...root.children]){
+    if(part.userData.glass){
+     const origin=part.getWorldPosition(new THREE.Vector3());root.remove(part);
+     for(let k=0;k<7;k++){const shard=new THREE.Mesh(new THREE.BoxGeometry(.12+rand()*.16,.12+rand()*.2,.035),new THREE.MeshBasicMaterial({color:0xa8dce5,transparent:true,opacity:.65}));shard.position.copy(origin).add(new THREE.Vector3((rand()-.5)*1.4,(rand()-.5)*1.2,(rand()-.5)*.8));scene.add(shard);glassShards.push({mesh:shard,life:2.5,velocity:new THREE.Vector3((rand()-.5)*7,2+rand()*5,(rand()-.5)*7)})}
+     say('Glass shattered!');
+    }
+    if(part.userData.burnable)ignite(root,'crate');
+   }
+  }
+ }
+ for(let i=structuralLinks.length-1;i>=0;i--){const link=structuralLinks[i];if(link.a.position.distanceTo(center)<10||link.b.position.distanceTo(center)<10){scene.remove(link.line);link.line.geometry.dispose();link.line.material.dispose();structuralLinks.splice(i,1);say('A structural connection snapped in the blast!')}}
+ for(let i=welds.length-1;i>=0;i--){const w=welds[i];if(w.a.position.distanceTo(center)<8||w.b.position.distanceTo(center)<8){welds.splice(i,1);say('A weld broke in the blast!')}}
+
  const flash=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),new THREE.MeshBasicMaterial({color:0xffb35c,transparent:true,opacity:.55,wireframe:true}));
  flash.position.copy(center);scene.add(flash);bomb.flash=flash;bomb.flashTime=.45;
  for(const m of crates){
@@ -464,10 +481,10 @@ function updatePhysics(dt){
   const a=link.a.position.clone().add(new THREE.Vector3(0,.35,0)),b=link.b.position.clone().add(new THREE.Vector3(0,.35,0)),d=a.distanceTo(b);
   link.line.geometry.dispose();link.line.geometry=new THREE.BufferGeometry().setFromPoints([a,b]);
   if((link.type==='rope'&&d>link.length*1.65)||(link.type==='hinge'&&d>link.rest+3.5)){scene.remove(link.line);link.line.geometry.dispose();link.line.material.dispose();structuralLinks.splice(i,1);say(link.type.toUpperCase()+' snapped under stress');}
-  else if(link.type==='rope'&&d>link.length&&d>0){const pull=b.sub(a).normalize().multiplyScalar((d-link.length)*.5);link.a.position.add(pull);link.b.position.sub(pull)}
+  else if(((link.type==='rope'&&d>link.length)||(link.type==='hinge'&&d>link.rest+.12))&&d>0){const allowed=link.type==='rope'?link.length:link.rest;const pull=b.sub(a).normalize().multiplyScalar((d-allowed)*.5);link.a.position.add(pull);link.b.position.sub(pull)}
  }
- for(const link of logicLinks){const p=[link.source.getWorldPosition(new THREE.Vector3()),link.motor.getWorldPosition(new THREE.Vector3())];link.line.geometry.dispose();link.line.geometry=new THREE.BufferGeometry().setFromPoints(p);const active=link.source.userData.vehiclePart==='switch'?link.source.userData.on:!!link.source.userData.active;link.motor.userData.active=active;if(active){const root=link.motor.userData.root;if(root&&crates.includes(root)){root.userData.velocity.x+=-Math.sin(yaw)*dt*5;root.userData.velocity.z+=-Math.cos(yaw)*dt*5}}}
- for(const root of crates){for(const part of root.children){if(part.userData.vehiclePart==='motor'&&part.userData.rotor&&part.userData.active)part.userData.rotor.rotation.x+=dt*12;if(part.userData.vehiclePart==='gear'&&part.userData.rotor)part.userData.rotor.rotation.z+=dt*2}}
+ for(const link of logicLinks){const p=[link.source.getWorldPosition(new THREE.Vector3()),link.motor.getWorldPosition(new THREE.Vector3())];link.line.geometry.dispose();link.line.geometry=new THREE.BufferGeometry().setFromPoints(p);const active=link.source.userData.vehiclePart==='switch'?link.source.userData.on:!!link.source.userData.active;link.motor.userData.active=active;if(active&&link.motor.userData.vehiclePart==='motor'){const root=link.motor.userData.root;if(root&&crates.includes(root)){root.userData.velocity.x+=-Math.sin(yaw)*dt*5;root.userData.velocity.z+=-Math.cos(yaw)*dt*5}}}
+ for(const root of crates){for(const part of root.children){if(part.userData.vehiclePart==='motor'&&part.userData.rotor&&part.userData.active)part.userData.rotor.rotation.x+=dt*12;if(part.userData.vehiclePart==='gear'&&part.userData.rotor&&part.userData.active)part.userData.rotor.rotation.z+=dt*8}}
  updateFire(dt);
  for(const wire of vehicleWires){const points=[wire.engine.getWorldPosition(new THREE.Vector3()),wire.wheel.getWorldPosition(new THREE.Vector3())];wire.line.geometry.dispose();wire.line.geometry=new THREE.BufferGeometry().setFromPoints(points)}
  if(drivingRoot&&vehiclePowered(drivingRoot)){const parts=drivingRoot.userData.vehicleParts;for(const wheel of parts.wheels)wheel.rotation.x-=Math.hypot(drivingRoot.userData.velocity.x,drivingRoot.userData.velocity.z)*dt*1.8}
@@ -549,12 +566,12 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('keyup',e=>keys[e.code]=false);
 document.addEventListener('mouseup',e=>{if(e.button===0)mouseHeld=false});
-let mouseHeld=false;
+let mouseHeld=false,sprayCooldown=0;
 document.addEventListener('wheel',e=>{if(!locked)return;selectSlot(((selectedSlot-1+(e.deltaY>0?1:17))%18)+1)},{passive:true});
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('mousedown',e=>{
  if(!locked)return;
- if(e.button===0){mouseHeld=true;if(selectedSlot===18){extinguishNearAim();return}}
+ if(e.button===0){mouseHeld=true;if(selectedSlot===18){sprayCooldown=0;return}}
  if(e.button===0){
   if(selectedSlot===18){return}
   if(buildMode) {
@@ -590,7 +607,7 @@ const clock=new THREE.Clock();
 function animate(){
  requestAnimationFrame(animate);
  const dt=Math.min(clock.getDelta(),.04);
- if(locked&&selectedSlot===18&&mouseHeld)extinguishNearAim();
+ if(locked&&selectedSlot===18&&mouseHeld){sprayCooldown-=dt;if(sprayCooldown<=0){extinguishNearAim();sprayCooldown=.16}}
  if(locked&&!driverSeat){
   const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
   const r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
