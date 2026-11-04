@@ -176,6 +176,7 @@ const keys={};
 let yaw=0,pitch=0,locked=false,started=false,buildMode=false,buildMenuOpen=false,vy=0,onGround=false;
 let selectedSlot=1,selectedBuildTool='crate',jumpVelocity=7.2,ammo=12,reserveAmmo=48,lastShot=0,reloading=false;
 let heldCrate=null,heldFreeObject=null,weldTarget=null;
+const freeBodies=[];
 const welds=[],entityWelds=[],visibleWelds=[],bombs=[],vehicleWires=[],logicLinks=[],structuralLinks=[],fires=[],sprayEffects=[],glassShards=[];
 let wireSource=null,driverSeat=null,drivingRoot=null,structureAnchor=null;
 const magazineSize=12,shotCooldown=300;
@@ -230,6 +231,7 @@ function placeCrate(hit){
 }
 function removeCrate(m){
  if(heldCrate===m)heldCrate=null;
+ const freeIndex=freeBodies.indexOf(m);if(freeIndex>=0)freeBodies.splice(freeIndex,1);
  for(const link of [...structuralLinks,...visibleWelds])if(link.a===m||link.b===m){scene.remove(link.visual);link.visual.traverse(o=>{if(o.geometry)o.geometry.dispose()})}
  for(let i=structuralLinks.length-1;i>=0;i--)if(structuralLinks[i].a===m||structuralLinks[i].b===m)structuralLinks.splice(i,1);
  for(let i=visibleWelds.length-1;i>=0;i--)if(visibleWelds[i].a===m||visibleWelds[i].b===m)visibleWelds.splice(i,1);
@@ -453,7 +455,7 @@ function findAimedCrate(){
 }
 function dropCrate(){
  if(heldCrate){heldCrate.userData.velocity.set(0,-1,0);heldCrate=null;say('Object dropped');return}
- if(heldFreeObject){heldFreeObject=null;say('Object dropped')}
+ if(heldFreeObject){heldFreeObject.userData.velocity.set(0,-1,0);heldFreeObject=null;say('Object dropped')}
  structureAnchor=null;
 }
 function useGrabTool(){
@@ -463,7 +465,7 @@ function useGrabTool(){
  while(obj&&obj!==scene&&!crates.includes(obj)&&!obj.userData.grabbable)obj=obj.parent;
  if(!obj||obj===scene){say('That object cannot be grabbed');return}
  if(crates.includes(obj)){heldCrate=obj;obj.userData.velocity.set(0,0,0)}
- else{obj.updateWorldMatrix(true,false);scene.attach(obj);heldFreeObject=obj;}
+ else{obj.updateWorldMatrix(true,false);scene.attach(obj);heldFreeObject=obj;physicsShape(obj);if(!freeBodies.includes(obj))freeBodies.push(obj);}
  say('Object grabbed — Z/X rotate, C/V tilt, Q to drop');
 }
 function useWeldTool(){
@@ -540,6 +542,41 @@ function getWeldedAssembly(start){
  while(changed){changed=false;for(const w of welds){if(found.has(w.a)&&!found.has(w.b)){found.add(w.b);changed=true}if(found.has(w.b)&&!found.has(w.a)){found.add(w.a);changed=true}}}
  return [...found];
 }
+function physicsShape(obj){
+ if(obj.userData.physicsShape)return obj.userData.physicsShape;
+ obj.updateWorldMatrix(true,true);const inverse=obj.matrixWorld.clone().invert(),bounds=new THREE.Box3();
+ obj.traverse(child=>{if(!child.isMesh||!child.geometry)return;if(!child.geometry.boundingBox)child.geometry.computeBoundingBox();bounds.union(child.geometry.boundingBox.clone().applyMatrix4(inverse.clone().multiply(child.matrixWorld)))});
+ if(bounds.isEmpty())bounds.setFromCenterAndSize(new THREE.Vector3(),new THREE.Vector3(.5,.5,.5));
+ const size=bounds.getSize(new THREE.Vector3()),shape={center:bounds.getCenter(new THREE.Vector3()),half:new THREE.Vector3(Math.max(.05,size.x*.5),Math.max(.05,size.y*.5),Math.max(.05,size.z*.5))};
+ obj.userData.physicsShape=shape;if(!obj.userData.velocity)obj.userData.velocity=new THREE.Vector3();if(!obj.userData.angularVelocity)obj.userData.angularVelocity=new THREE.Vector3();return shape;
+}
+function bodyOBB(obj){const shape=physicsShape(obj);obj.updateWorldMatrix(true,false);const q=obj.getWorldQuaternion(new THREE.Quaternion());return {center:obj.localToWorld(shape.center.clone()),half:shape.half,axes:[new THREE.Vector3(1,0,0).applyQuaternion(q),new THREE.Vector3(0,1,0).applyQuaternion(q),new THREE.Vector3(0,0,1).applyQuaternion(q)]}}
+function obbOverlap(a,b){
+ const axes=[...a.axes,...b.axes];for(const x of a.axes)for(const y of b.axes){const c=new THREE.Vector3().crossVectors(x,y);if(c.lengthSq()>.000001)axes.push(c.normalize())}
+ const delta=b.center.clone().sub(a.center);let best=Infinity,bestAxis=null;
+ for(const axis0 of axes){const axis=axis0.clone().normalize(),ra=a.half.x*Math.abs(axis.dot(a.axes[0]))+a.half.y*Math.abs(axis.dot(a.axes[1]))+a.half.z*Math.abs(axis.dot(a.axes[2])),rb=b.half.x*Math.abs(axis.dot(b.axes[0]))+b.half.y*Math.abs(axis.dot(b.axes[1]))+b.half.z*Math.abs(axis.dot(b.axes[2])),overlap=ra+rb-Math.abs(delta.dot(axis));if(overlap<=0)return null;if(overlap<best){best=overlap;bestAxis=axis.multiplyScalar(delta.dot(axis)>=0?1:-1)}}
+ return {depth:best,normal:bestAxis,point:a.center.clone().add(b.center).multiplyScalar(.5)};
+}
+function inverseInertia(obj){const h=physicsShape(obj).half;return 1/Math.max(.08,(obj.userData.mass||1)*(h.x*h.x+h.y*h.y+h.z*h.z)/3)}
+function applyBodyImpulse(obj,impulse,point){obj.userData.velocity.addScaledVector(impulse,1/(obj.userData.mass||1));const arm=point.clone().sub(bodyOBB(obj).center);obj.userData.angularVelocity.addScaledVector(new THREE.Vector3().crossVectors(arm,impulse),inverseInertia(obj))}
+function integrateBodyRotation(obj,dt){const w=obj.userData.angularVelocity,speed=w.length();if(speed>.00001)obj.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(w.clone().normalize(),speed*dt)).normalize()}
+function resolveBodyPair(a,b){
+ if(a===heldCrate||b===heldCrate||a===heldFreeObject||b===heldFreeObject)return;
+ const A=bodyOBB(a),B=bodyOBB(b),hit=obbOverlap(A,B);if(!hit)return;
+ const invA=1/(a.userData.mass||1),invB=1/(b.userData.mass||1),sum=invA+invB,correction=hit.normal.clone().multiplyScalar(Math.max(0,hit.depth-.002)*.78/sum);
+ a.position.addScaledVector(correction,-invA);b.position.addScaledVector(correction,invB);
+ const va=a.userData.velocity.clone().add(new THREE.Vector3().crossVectors(a.userData.angularVelocity,hit.point.clone().sub(A.center))),vb=b.userData.velocity.clone().add(new THREE.Vector3().crossVectors(b.userData.angularVelocity,hit.point.clone().sub(B.center))),closing=vb.sub(va).dot(hit.normal);
+ if(closing<0){const impulse=hit.normal.clone().multiplyScalar(-1.12*closing/sum);applyBodyImpulse(a,impulse.clone().negate(),hit.point);applyBodyImpulse(b,impulse,hit.point)}
+}
+function resolveGroundContact(obj){
+ const shape=physicsShape(obj),obb=bodyOBB(obj),q=obj.getWorldQuaternion(new THREE.Quaternion()),origin=obj.getWorldPosition(new THREE.Vector3());let lowest=Infinity,contacts=[];
+ for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1]){const p=shape.center.clone().add(new THREE.Vector3(x*shape.half.x,y*shape.half.y,z*shape.half.z)).applyQuaternion(q).add(origin);if(p.y<lowest-.0001){lowest=p.y;contacts=[p]}else if(Math.abs(p.y-lowest)<.0001)contacts.push(p)}
+ if(lowest>=0)return;
+ const contact=contacts.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).multiplyScalar(1/contacts.length);obj.position.y-=lowest;
+ const arm=contact.sub(obb.center),mass=obj.userData.mass||1,torque=new THREE.Vector3().crossVectors(arm,new THREE.Vector3(0,-15*mass,0));
+ obj.userData.angularVelocity.addScaledVector(torque,inverseInertia(obj)*.85*dtFixed);
+ const vel=obj.userData.velocity;if(vel.y<0)vel.y=Math.max(0,-vel.y*.08);vel.x*=.985;vel.z*=.985;obj.userData.angularVelocity.multiplyScalar(.995);
+}
 function updatePhysics(dt){
  updateSensorStates();
  if(drivingRoot&&driverSeat&&crates.includes(drivingRoot)&&vehiclePowered(drivingRoot)){
@@ -549,42 +586,27 @@ function updatePhysics(dt){
   drivingRoot.userData.velocity.x*=Math.max(0,1-.5*dt);drivingRoot.userData.velocity.z*=Math.max(0,1-.5*dt);
   camera.position.set(drivingRoot.position.x,drivingRoot.position.y+2.3,drivingRoot.position.z+.1);
  }else if(drivingRoot&&!vehiclePowered(drivingRoot)){driverSeat=null;drivingRoot=null;say("Vehicle needs an engine wired to at least two wheels")}
- for(const m of crates){
-  const vel=m.userData.velocity;
-  if(m===heldCrate){
-   const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-   const probe=new THREE.Raycaster(camera.position,forward,0,3.2).intersectObjects(scene.children.filter(o=>o!==m&&o!==sun),true)[0];
-   const distance=probe?probe.distance-.72:3.2;
-   const desired=m.position.clone();if(distance>0)desired.copy(camera.position).addScaledVector(forward,distance);desired.y=Math.max(.6,desired.y);
-   m.position.lerp(desired,.35);
-   if(keys.KeyZ)m.rotation.y+=dt*1.8;if(keys.KeyX)m.rotation.y-=dt*1.8;
-   if(keys.KeyC)m.rotation.x+=dt*1.8;if(keys.KeyV)m.rotation.x-=dt*1.8;
-   vel.set(0,0,0);continue
+ const bodies=[...crates,...freeBodies.filter(o=>isInScene(o)&&!crates.includes(o))];
+ for(const m of bodies){
+  const vel=m.userData.velocity||(m.userData.velocity=new THREE.Vector3());if(!m.userData.angularVelocity)m.userData.angularVelocity=new THREE.Vector3();
+  if(m===heldCrate||m===heldFreeObject){
+   const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion),probe=new THREE.Raycaster(camera.position,forward,0,3.2).intersectObjects(scene.children.filter(o=>o!==m&&o!==sun),true)[0],distance=probe?probe.distance-(m===heldCrate?.72:.55):3.2;
+   const desired=m.position.clone();if(distance>0)desired.copy(camera.position).addScaledVector(forward,distance);desired.y=Math.max(.08,desired.y);m.position.lerp(desired,.35);
+   if(keys.KeyZ)m.rotation.y+=dt*1.8;if(keys.KeyX)m.rotation.y-=dt*1.8;if(keys.KeyC)m.rotation.x+=dt*1.8;if(keys.KeyV)m.rotation.x-=dt*1.8;
+   vel.set(0,0,0);m.userData.angularVelocity.set(0,0,0);continue;
   }
-  if(selectedSlot===4&&keys.KeyE&&m.userData.thruster&&findAimedCrate()===m){const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);vel.addScaledVector(forward,20*dt)}
-  const previousY=m.position.y;vel.y-=15*dt;m.position.addScaledVector(vel,dt);
-  let floorY=.6;
-  for(const other of crates){if(other===m||other===heldCrate)continue;
-   const overlapX=Math.abs(m.position.x-other.position.x)<1.18,overlapZ=Math.abs(m.position.z-other.position.z)<1.18,top=other.position.y+.6;
-   if(overlapX&&overlapZ&&vel.y<=0&&previousY>=top-.04&&m.position.y<=top)floorY=Math.max(floorY,top);
+  if(crates.includes(m)&&selectedSlot===4&&keys.KeyE&&m.userData.thruster&&findAimedCrate()===m){const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);vel.addScaledVector(forward,20*dt)}
+  vel.y-=15*dt;m.position.addScaledVector(vel,dt);m.userData.angularVelocity.multiplyScalar(Math.max(0,1-.18*dt));integrateBodyRotation(m,dt);
+  resolveGroundContact(m,dt);
+  if(crates.includes(m)){
+   if(Math.hypot(vel.x,vel.z)>18){for(const part of [...m.children])if(part.userData.glass)shatterGlass(m,part);else if(part.userData.burnable)splinterBeam(m,part)}
+   for(const t of trees){if(t.fallen)continue;const dx=m.position.x-t.x,dz=m.position.z-t.z,d=Math.hypot(dx,dz),assembly=getWeldedAssembly(m);if(d<t.r+.68&&assembly.length>=2&&Math.hypot(vel.x,vel.z)>8){t.fallen=true;const axis=new THREE.Vector3(-dz,0,dx).normalize();treeFalls.push({tree:t,axis,angle:0});const oi=obstacles.findIndex(o=>o.tree===t);if(oi>=0)obstacles.splice(oi,1);say("WELDED ASSEMBLY knocked down a tree!")}}
+   for(const o of obstacles){if(o.mesh||o.tree)continue;const dx=m.position.x-o.x,dz=m.position.z-o.z,d=Math.hypot(dx,dz),min=o.r+.68;if(d>0&&d<min){const nx=dx/d,nz=dz/d;m.position.x=o.x+nx*min;m.position.z=o.z+nz*min;const push=vel.x*nx+vel.z*nz;if(push<0){vel.x-=1.35*push*nx;vel.z-=1.35*push*nz}}}
+   const obstacle=obstacles.find(o=>o.mesh===m);if(obstacle){obstacle.x=m.position.x;obstacle.z=m.position.z}
   }
-  if(m.position.y<floorY){m.position.y=floorY;if(vel.y<0)vel.y=0;vel.x*=.985;vel.z*=.985}
-  if(Math.hypot(vel.x,vel.z)>18){for(const part of [...m.children])if(part.userData.glass)shatterGlass(m,part);else if(part.userData.burnable)splinterBeam(m,part)}
-  for(const t of trees){if(t.fallen)continue;const dx=m.position.x-t.x,dz=m.position.z-t.z,d=Math.hypot(dx,dz),assembly=getWeldedAssembly(m);if(d<t.r+.68&&assembly.length>=2&&Math.hypot(vel.x,vel.z)>8){t.fallen=true;const axis=new THREE.Vector3(-dz,0,dx).normalize();treeFalls.push({tree:t,axis,angle:0});const oi=obstacles.findIndex(o=>o.tree===t);if(oi>=0)obstacles.splice(oi,1);say("WELDED ASSEMBLY knocked down a tree!")}}
-  for(const o of obstacles){if(o.mesh===m||o.tree)continue;if(o.mesh&&Math.abs(m.position.y-o.mesh.position.y)>=1.18)continue;const dx=m.position.x-o.x,dz=m.position.z-o.z,d=Math.hypot(dx,dz),min=o.r+.68;if(d>0&&d<min){const nx=dx/d,nz=dz/d;m.position.x=o.x+nx*min;m.position.z=o.z+nz*min;const push=vel.x*nx+vel.z*nz;if(push<0){vel.x-=1.35*push*nx;vel.z-=1.35*push*nz}}}
-  const obstacle=obstacles.find(o=>o.mesh===m);if(obstacle){obstacle.x=m.position.x;obstacle.z=m.position.z}
   vel.multiplyScalar(Math.max(0,1-.12*dt));
  }
- if(heldFreeObject){
-  const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-  const probe=new THREE.Raycaster(camera.position,forward,0,3.2).intersectObjects(scene.children.filter(o=>o!==heldFreeObject&&o!==sun),true)[0];
-  const distance=probe?probe.distance-.55:3.2;
-  const desired=heldFreeObject.position.clone();if(distance>0)desired.copy(camera.position).addScaledVector(forward,distance);desired.y=Math.max(.08,desired.y);
-  heldFreeObject.position.lerp(desired,.35);
-  if(keys.KeyZ)heldFreeObject.rotation.y+=dt*1.8;if(keys.KeyX)heldFreeObject.rotation.y-=dt*1.8;
-  if(keys.KeyC)heldFreeObject.rotation.x+=dt*1.8;if(keys.KeyV)heldFreeObject.rotation.x-=dt*1.8;
- }
- for(let i=0;i<crates.length;i++)for(let j=i+1;j<crates.length;j++){const a=crates[i],b=crates[j];if(a===heldCrate||b===heldCrate||Math.abs(a.position.y-b.position.y)>=1.18)continue;const dx=b.position.x-a.position.x,dz=b.position.z-a.position.z,d=Math.hypot(dx,dz);if(d>0&&d<1.18){const nx=dx/d,nz=dz/d,o=(1.18-d)*.5;a.position.x-=nx*o;b.position.x+=nx*o;a.position.z-=nz*o;b.position.z+=nz*o}}
+ for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++)resolveBodyPair(bodies[i],bodies[j]);
  for(let i=welds.length-1;i>=0;i--){const w=welds[i];if(crates.includes(w.a)&&crates.includes(w.b)){const stress=w.a.userData.velocity.distanceTo(w.b.userData.velocity);if(stress>22){welds.splice(i,1);say('A stressed weld snapped!')}else{w.b.position.copy(w.a.position).add(w.offset);w.b.userData.velocity.copy(w.a.userData.velocity)}}}
  for(let i=entityWelds.length-1;i>=0;i--){const w=entityWelds[i];if(!isInScene(w.a)||!isInScene(w.b)){entityWelds.splice(i,1);continue}w.a.updateWorldMatrix(true,false);w.b.parent.updateWorldMatrix(true,false);const target=w.a.matrixWorld.clone().multiply(w.relative),local=w.b.parent.matrixWorld.clone().invert().multiply(target);local.decompose(w.b.position,w.b.quaternion,w.b.scale);w.b.updateMatrixWorld(true)}
  for(let i=structuralLinks.length-1;i>=0;i--){const link=structuralLinks[i];if(!isInScene(link.a)||!isInScene(link.b)){scene.remove(link.visual);link.visual.traverse(o=>{if(o.geometry)o.geometry.dispose()});structuralLinks.splice(i,1);continue}
