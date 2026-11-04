@@ -252,6 +252,7 @@ function findAimedEntity(hit=getAimHit()){
  return obj&&obj!==scene?obj:null;
 }
 function isInScene(obj){let current=obj;while(current&&current!==scene)current=current.parent;return current===scene}
+function isAncestorObject(a,b){let current=b.parent;while(current&&current!==scene){if(current===a)return true;current=current.parent}return false}
 function worldTranslate(obj,delta){
  if(!obj.parent){obj.position.add(delta);return}
  obj.parent.updateWorldMatrix(true,false);
@@ -365,7 +366,7 @@ function connectStructure(type){
  const hit=getAimHit(),entity=findAimedEntity(hit);if(!hit||!entity){say('Aim at any grabbable object or part');return}
  entity.updateWorldMatrix(true,false);const localPoint=entity.worldToLocal(hit.point.clone());
  if(!structureAnchor){structureAnchor={entity,localPoint};say('First anchor selected — click the exact point on another object');return}
- if(structureAnchor.entity===entity){say('Choose a different object');return}
+ if(structureAnchor.entity===entity||isAncestorObject(structureAnchor.entity,entity)||isAncestorObject(entity,structureAnchor.entity)){say('Choose two separate objects, not a part and its parent');return}
  const a=structureAnchor.entity,b=entity,localA=structureAnchor.localPoint;structureAnchor=null;
  const pa=a.localToWorld(localA.clone()),pb=b.localToWorld(localPoint.clone()),length=pa.distanceTo(pb);
  const visual=makeConnectionVisual(type),link={type,a,b,visual,localA,localB:localPoint.clone(),length,rest:length};
@@ -469,7 +470,7 @@ function useWeldTool(){
  const hit=getAimHit(),entity=findAimedEntity(hit);if(!hit||!entity){say('Aim at any object or build part to weld it');return}
  entity.updateWorldMatrix(true,false);const localPoint=entity.worldToLocal(hit.point.clone());
  if(!weldTarget){weldTarget={entity,localPoint};say('First weld point selected — choose another object');return}
- if(weldTarget.entity===entity){say('Choose a different object');return}
+ if(weldTarget.entity===entity||isAncestorObject(weldTarget.entity,entity)||isAncestorObject(entity,weldTarget.entity)){say('Choose two separate objects, not a part and its parent');return}
  const first=weldTarget;weldTarget=null;const a=first.entity,b=entity,pa=a.localToWorld(first.localPoint.clone()),pb=b.localToWorld(localPoint.clone());
  if(crates.includes(a)&&crates.includes(b)){
   if(welds.some(w=>(w.a===a&&w.b===b)||(w.a===b&&w.b===a))){say('Those crates are already welded');return}
