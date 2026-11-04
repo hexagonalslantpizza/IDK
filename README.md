@@ -21,7 +21,19 @@ python -m http.server 8000
 
 Then visit http://localhost:8000.
 
-Three.js is loaded from jsDelivr, so an internet connection is required.
+Three.js currently loads from jsDelivr, so this development version requires an internet connection.
+
+## itch.io HTML5 compatibility
+
+The project is being developed for itch.io's **HTML5** game format.
+
+Before the first itch.io upload, the release package should:
+- Be a ZIP archive with `index.html` at the ZIP's top level.
+- Include every required JavaScript file, model, texture, and sound.
+- Include a local copy of the Three.js dependency instead of relying on the development CDN.
+- Be tested at the embedded game sizes used by itch.io.
+
+Do not upload the GitHub repository ZIP as a finished release yet: the dependency is still loaded from an external CDN, and the release package has not been assembled or tested on itch.io.
 
 ## GitHub Pages
 
