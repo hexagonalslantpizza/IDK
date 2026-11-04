@@ -219,6 +219,7 @@ function surfacePlacement(hit,offset=.61){return hit.point.clone().addScaledVect
 function freePartSurfaceOffset(type){return ({seat:-.64,engine:-.29,wheel:.54,switch:-.33,sensor:-.32,motor:-.225,gear:-.08,beam:-.51,glass:-.55})[type]??.02}
 function placeGroupAtHit(group,hit,root,type){
  const normal=surfaceNormal(hit),offset=freePartSurfaceOffset(type);
+ if(root)delete root.userData.physicsShape;
  if(root){root.updateMatrixWorld(true);const localNormal=normal.clone().transformDirection(root.matrixWorld.clone().invert());const worldPoint=hit.point.clone().addScaledVector(normal,offset);group.position.copy(root.worldToLocal(worldPoint));group.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),localNormal)}
  else{group.position.copy(hit.point).addScaledVector(normal,offset);group.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),normal)}
  group.traverse(o=>{if(o.isMesh){o.visible=true;o.castShadow=true;o.receiveShadow=true}});
@@ -568,7 +569,7 @@ function resolveBodyPair(a,b){
  const va=a.userData.velocity.clone().add(new THREE.Vector3().crossVectors(a.userData.angularVelocity,hit.point.clone().sub(A.center))),vb=b.userData.velocity.clone().add(new THREE.Vector3().crossVectors(b.userData.angularVelocity,hit.point.clone().sub(B.center))),closing=vb.sub(va).dot(hit.normal);
  if(closing<0){const impulse=hit.normal.clone().multiplyScalar(-1.12*closing/sum);applyBodyImpulse(a,impulse.clone().negate(),hit.point);applyBodyImpulse(b,impulse,hit.point)}
 }
-function resolveGroundContact(obj){
+function resolveGroundContact(obj,dt){
  const shape=physicsShape(obj),obb=bodyOBB(obj),q=obj.getWorldQuaternion(new THREE.Quaternion()),origin=obj.getWorldPosition(new THREE.Vector3());let lowest=Infinity,contacts=[];
  for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1]){const p=shape.center.clone().add(new THREE.Vector3(x*shape.half.x,y*shape.half.y,z*shape.half.z)).applyQuaternion(q).add(origin);if(p.y<lowest-.0001){lowest=p.y;contacts=[p]}else if(Math.abs(p.y-lowest)<.0001)contacts.push(p)}
  if(lowest>=0)return;
