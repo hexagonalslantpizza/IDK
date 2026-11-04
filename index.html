@@ -149,7 +149,7 @@ function tree(x,z,s){
 function rock(x,z,s){
  const m=new THREE.Mesh(new THREE.DodecahedronGeometry(1,0),mat.rocks[Math.abs(Math.floor(x*3+z*7))%3]);
  m.position.set(x,.55*s,z);m.scale.set(1.25*s,.8*s,s);m.castShadow=true;m.receiveShadow=true;
- scene.add(m);obstacles.push({x,z,r:.8*s});
+ scene.add(m);obstacles.push({x,z,r:.8*s,mesh:m});
 }
 for(let i=0;i<82;i++){
  const a=rand()*Math.PI*2,r=14+rand()*62,x=Math.cos(a)*r,z=Math.sin(a)*r;
@@ -159,7 +159,7 @@ for(let i=0;i<82;i++){
 function block(w,h,d,material,x,y,z,collide=true){
  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
  m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);
- if(collide)obstacles.push({x,z,r:Math.max(w,d)*.48});
+ if(collide)obstacles.push({x,z,r:Math.max(w,d)*.48,mesh:m});
  return m;
 }
 block(7,.35,6,mat.dark,-8,.18,-8);
@@ -649,7 +649,11 @@ document.addEventListener('mousedown',e=>{
 function blocked(x,z){
  if(Math.abs(x)>86||Math.abs(z)>86)return true;
  const feet=camera.position.y-1.7;
- for(const o of obstacles){if(o.mesh&&feet>=o.mesh.position.y+.58)continue;if((x-o.x)**2+(z-o.z)**2<(o.r+player.r)**2)return true}
+ for(const o of obstacles){
+  const surface=o.mesh||(o.tree&&o.tree.group);
+  if(surface&&feet>=new THREE.Box3().setFromObject(surface).max.y-.04)continue;
+  if((x-o.x)**2+(z-o.z)**2<(o.r+player.r)**2)return true;
+ }
  return false;
 }
 const clock=new THREE.Clock();
@@ -671,8 +675,10 @@ function animate(){
   const previousFeet=camera.position.y-1.7;
   vy-=19*dt;camera.position.y+=vy*dt;
   let landingHeight=0;
-  if(vy<=0){for(const crate of crates){const top=crate.position.y+.6;
-   if(Math.abs(player.x-crate.position.x)<.82&&Math.abs(player.z-crate.position.z)<.82&&previousFeet>=top-.08&&camera.position.y-1.7<=top)landingHeight=Math.max(landingHeight,top);
+  if(vy<=0){for(const obstacle of obstacles){
+   const surface=obstacle.mesh||(obstacle.tree&&obstacle.tree.group);if(!surface)continue;
+   const bounds=new THREE.Box3().setFromObject(surface),top=bounds.max.y;
+   if(player.x>=bounds.min.x-.08&&player.x<=bounds.max.x+.08&&player.z>=bounds.min.z-.08&&player.z<=bounds.max.z+.08&&previousFeet>=top-.08&&camera.position.y-1.7<=top)landingHeight=Math.max(landingHeight,top);
   }}
   if(camera.position.y-1.7<=landingHeight){camera.position.y=landingHeight+1.7;vy=0;onGround=true}else onGround=false;
   camera.position.x=player.x;camera.position.z=player.z;
