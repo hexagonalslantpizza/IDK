@@ -1,60 +1,37 @@
-# IDK — Sandbox PVP
+# FREEFORM — Sandbox PVP
 
-A browser-based 3D low-poly sandbox/PVP prototype.
+A browser-based 3D low-poly sandbox prototype.
 
-## Demo 005
+## Current demo
 
-Current features:
-- First-person movement and mouse look
+- First-person movement, mouse look, sprinting, and adjustable jump height
 - Low-poly outdoor test map
-- Eighteen-slot hotbar
-- Arcade pistol and reload
-- Build menu and crate placement
-- Dynamic crates with basic gravity and collision
-- Grab tool to pick up and drop crates
-- Weld tool to connect crates
-- Thrusters that push equipped crates
-- Fictional arcade bomb with countdown and crate knockback
-- Vehicle seat, engine, four wheels, and wire tool
-- Vehicles require an engine connected to at least two wheels before they can be driven
-- Press F while aiming at a seat to sit; WASD drives; press F again to exit
-- Circuit parts: toggle switches, proximity sensors, motors, and gears
-- Logic wiring: connect a switch or sensor to a motor; connect a motor to a gear
-- Simple beams, hinged connections, and ropes between crate frames
-- Glass panels that shatter on strong impacts or nearby blasts; wooden beams splinter
-- Fire spreads between nearby wooden crates and trees; burning objects turn black after 20 seconds and are removed after another 10 seconds
-- Fire extinguisher tool sprays toward the crosshair and puts out nearby flames
-- Welds, ropes, and hinges can break under strong stress or explosions
-- Trees can be knocked down by a fast welded assembly of at least two crates; a single crate cannot knock them down
+- Four-slot hotbar: pistol, grab, weld, and fire extinguisher
+- Construction menu for buildable objects
+- Free placement on surfaces, including the ground and the tops/sides of existing objects
+- Crates can stack, collide, and support the player
+- Player can jump and stand on crates and other world surfaces
+- Grab tool can pick up crates and freely placed build objects; held objects are blocked by world geometry
+- Weld tool connects crates
+- Thrusters, arcade bombs, seats, engines, wheels, switches, sensors, motors, gears, beams, glass, hinges, and ropes
+- Fire spreads between nearby wooden crates and trees; objects turn black after 20 seconds and disappear after another 10 seconds
+- Fire extinguisher sprays toward the crosshair
+- Simplified vehicle, circuit, destruction, and fire systems
 
 ## Controls
 
-- WASD: walk or drive while seated
+- WASD: move or drive while seated
 - Mouse: look
 - Space: jump
 - Shift: sprint
-- 1: pistol
-- 2: grab/drop crate
-- 3: weld two crates
-- 4: attach thruster; hold E while aiming at a thruster-equipped crate to fire it
-- 5: place arcade bomb
-- 6: attach a seat to an aimed-at crate
-- 7: attach an engine to an aimed-at crate
-- 8: attach up to four wheels to an aimed-at crate
-- 9: wire tool: connect engine to wheels, switches/sensors to motors, or motors to gears
-- 0 / slot 10: place a switch on a crate; click an existing switch to toggle it
-- Mouse wheel: cycle through all 18 tools
-- Slot 11: sensor; attach to a crate to detect nearby crates
-- Slot 12: motor; connect a switch or sensor to activate it
-- Slot 13: gear; connect it to a motor to make it rotate
-- Slot 14: wooden beam; attach it to a crate frame
-- Slot 15: hinge; click two crate frames to connect them
-- Slot 16: rope; click two crate frames to connect them
-- Slot 17: glass panel; attach it to a crate frame
-- Slot 18: fire extinguisher; hold left click while aiming toward a fire
-- F: sit in an aimed-at seat or exit the current seat
-- Q: drop a held crate
-- R: reload
+- 1–4: select pistol, grab, weld, or extinguisher
+- Mouse wheel: cycle through the four hotbar tools
+- B: open/close the build menu
+- In the build menu: choose an item, press DONE, then click in the world to place/use it
+- F: sit in an aimed-at seat or exit
+- Q: drop a held object
+- R: reload pistol
+- E: fire an aimed-at thruster-equipped crate
 - Right click: remove an aimed-at crate
 - Esc: release mouse
 
@@ -72,4 +49,4 @@ Three.js is stored in `vendor/three.module.js` and loads locally.
 
 ## Development status
 
-This is a local single-player development build. Multiplayer networking and synchronized physics are not implemented. The latest engineering, destruction, fire, and vehicle systems have not been browser-tested yet. These are simplified prototype physics, not full rigid-body simulation.
+This is a local single-player development build. Multiplayer networking and synchronized physics are not implemented. The physics and engineering systems are simplified prototypes, not full rigid-body simulation. JavaScript syntax has been checked, but the latest changes have not been browser-tested yet.
