@@ -342,6 +342,8 @@ function updatePhysics(dt){
  }
  for(let i=0;i<crates.length;i++)for(let j=i+1;j<crates.length;j++){const a=crates[i],b=crates[j];if(a===heldCrate||b===heldCrate)continue;const dx=b.position.x-a.position.x,dz=b.position.z-a.position.z,d=Math.hypot(dx,dz);if(d>0&&d<1.18){const nx=dx/d,nz=dz/d,o=(1.18-d)*.5;a.position.x-=nx*o;b.position.x+=nx*o;a.position.z-=nz*o;b.position.z+=nz*o}}
  for(const w of welds){if(crates.includes(w.a)&&crates.includes(w.b)){w.b.position.copy(w.a.position).add(w.offset);w.b.userData.velocity.copy(w.a.userData.velocity)}}
+ for(const wire of vehicleWires){const points=[wire.engine.getWorldPosition(new THREE.Vector3()),wire.wheel.getWorldPosition(new THREE.Vector3())];wire.line.geometry.dispose();wire.line.geometry=new THREE.BufferGeometry().setFromPoints(points)}
+ if(drivingRoot&&vehiclePowered(drivingRoot)){const parts=drivingRoot.userData.vehicleParts;for(const wheel of parts.wheels)wheel.rotation.x-=Math.hypot(drivingRoot.userData.velocity.x,drivingRoot.userData.velocity.z)*dt*1.8}
  for(const f of treeFalls){if(f.angle<Math.PI/2){const step=Math.min(Math.PI/2-f.angle,dt*1.4);f.tree.group.rotateOnWorldAxis(f.axis,step);f.angle+=step}}
  for(let i=bombs.length-1;i>=0;i--){const b=bombs[i];if(b.mesh){b.fuse-=dt;b.mesh.rotation.y+=dt*2;if(b.fuse<=0)arcadeBlast(b)}if(b.flash){b.flashTime-=dt;b.flash.scale.setScalar(1+(0.45-b.flashTime)*18);b.flash.material.opacity=Math.max(0,b.flashTime/.45*.55);if(b.flashTime<=0){scene.remove(b.flash);b.flash.geometry.dispose();b.flash.material.dispose();bombs.splice(i,1)}}else if(!b.mesh&&b.fuse<=0)bombs.splice(i,1)}
 }
