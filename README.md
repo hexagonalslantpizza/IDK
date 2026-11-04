@@ -1,22 +1,18 @@
 # FREEFORM — Sandbox PVP
 
-A browser-based 3D low-poly sandbox prototype.
+A browser-based 3D sandbox prototype.
 
 ## Current demo
 
 - First-person movement, mouse look, sprinting, and adjustable jump height
-- Low-poly outdoor test map
 - Four-slot hotbar: pistol, grab, weld, and fire extinguisher
 - Construction menu for buildable objects
-- Free placement on surfaces, including the ground and the tops/sides of existing objects
-- Crates can stack, collide, and support the player
-- Player can jump and stand on crates and other world surfaces
-- Grab tool can pick up crates and freely placed build objects; held objects are blocked by world geometry
-- Weld tool connects crates
-- Thrusters, arcade bombs, seats, engines, wheels, switches, sensors, motors, gears, beams, glass, hinges, and ropes
-- Fire spreads between nearby wooden crates and trees; objects turn black after 20 seconds and disappear after another 10 seconds
-- Fire extinguisher sprays toward the crosshair
-- Simplified vehicle, circuit, destruction, and fire systems
+- Free placement on ground and world surfaces
+- Crates stack, collide, and support the player
+- Seats, engines, wheels, switches, sensors, motors, gears, beams, and glass place at the exact surface point under the crosshair, including on a crate
+- Hinge and rope endpoints are anchored at the exact two points selected on separate crates
+- Grab tool picks up crates and build parts; held objects can be rotated and tilted
+- Thrusters, arcade bombs, simplified vehicles, circuit logic, destruction, and spreading fire
 
 ## Controls
 
@@ -24,12 +20,14 @@ A browser-based 3D low-poly sandbox prototype.
 - Mouse: look
 - Space: jump
 - Shift: sprint
-- 1–4: select pistol, grab, weld, or extinguisher
-- Mouse wheel: cycle through the four hotbar tools
-- B: open/close the build menu
-- In the build menu: choose an item, press DONE, then click in the world to place/use it
-- F: sit in an aimed-at seat or exit
+- 1–4: pistol, grab, weld, extinguisher
+- Mouse wheel: cycle through hotbar tools
+- B: open/close build menu
+- Choose a build item, press DONE, then click the exact spot in the world where it should be placed
+- Z / X: rotate a held object left/right
+- C / V: tilt a held object while holding it
 - Q: drop a held object
+- F: sit in an aimed-at seat or exit
 - R: reload pistol
 - E: fire an aimed-at thruster-equipped crate
 - Right click: remove an aimed-at crate
@@ -49,4 +47,4 @@ Three.js is stored in `vendor/three.module.js` and loads locally.
 
 ## Development status
 
-This is a local single-player development build. Multiplayer networking and synchronized physics are not implemented. The physics and engineering systems are simplified prototypes, not full rigid-body simulation. JavaScript syntax has been checked, but the latest changes have not been browser-tested yet.
+This is a local single-player development build. Multiplayer networking and synchronized physics are not implemented. The physics and engineering systems are simplified prototypes. JavaScript syntax has been checked, but the latest changes have not been browser-tested yet.
