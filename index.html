@@ -59,7 +59,7 @@ input[type=range]{width:100%;accent-color:#b9d397}
  <div id="help" class="pill"><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Shift</b> sprint<br><b>1–9</b> hotbar · <b>Left click</b> use/place · <b>R</b> reload<br><b>B</b> build menu · <b>Right click</b> remove crate · <b>Esc</b> release mouse</div>
 </div>
 <div id="overlay">
- <div id="panel"><h1>IDK — Sandbox PVP</h1><div class="pill" style="display:inline-block">DEMO 002 · MOVEMENT + BUILDING + HOTBAR</div><p>Explore the low-poly test area, place crates where you're aiming, and try the new hotbar and arcade pistol. This is still a single-player prototype.</p><button id="enter">ENTER WORLD</button><small>Click to lock the mouse. Three.js currently loads from a public CDN, so an internet connection is required.</small></div>
+ <div id="panel"><h1>IDK — Sandbox PVP</h1><div class="pill" style="display:inline-block">DEMO 002 · MOVEMENT + BUILDING + HOTBAR</div><p>Explore the low-poly test area, place crates where you're aiming, and try the new hotbar and arcade pistol. This is still a single-player prototype.</p><button id="enter">ENTER WORLD</button><small>Click to lock the mouse. Three.js is included locally, so the game does not need an internet connection.</small></div>
 </div>
 <div id="buildMenu">
  <div id="panel">
@@ -76,7 +76,7 @@ input[type=range]{width:100%;accent-color:#b9d397}
  </div>
 </div>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import * as THREE from './vendor/three.module.js';
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x9eb6b5);
