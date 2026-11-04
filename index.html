@@ -176,7 +176,7 @@ const keys={};
 let yaw=0,pitch=0,locked=false,started=false,buildMode=false,buildMenuOpen=false,vy=0,onGround=false;
 let selectedSlot=1,selectedBuildTool='crate',jumpVelocity=7.2,ammo=12,reserveAmmo=48,lastShot=0,reloading=false;
 let heldCrate=null,heldFreeObject=null,weldTarget=null;
-const welds=[],bombs=[],vehicleWires=[],logicLinks=[],structuralLinks=[],fires=[],sprayEffects=[],glassShards=[];
+const welds=[],entityWelds=[],visibleWelds=[],bombs=[],vehicleWires=[],logicLinks=[],structuralLinks=[],fires=[],sprayEffects=[],glassShards=[];
 let wireSource=null,driverSeat=null,drivingRoot=null,structureAnchor=null;
 const magazineSize=12,shotCooldown=300;
 const overlay=document.getElementById('overlay');
@@ -225,11 +225,15 @@ function placeGroupAtHit(group,hit,root,type){
 function placeCrate(hit){
  const point=surfacePlacement(hit,.61),x=point.x,z=point.z;
  const m=new THREE.Mesh(crateGeo,mat.wood.clone());
- m.position.copy(point);m.castShadow=true;m.receiveShadow=true;m.userData.velocity=new THREE.Vector3();m.userData.thruster=false;m.userData.burnable=true;scene.add(m);
+ m.position.copy(point);m.castShadow=true;m.receiveShadow=true;m.userData.grabbable=true;m.userData.velocity=new THREE.Vector3();m.userData.thruster=false;m.userData.burnable=true;scene.add(m);
  crates.push(m);obstacles.push({x,z,r:.82,mesh:m});say('Crate placed');
 }
 function removeCrate(m){
  if(heldCrate===m)heldCrate=null;
+ for(const link of [...structuralLinks,...visibleWelds])if(link.a===m||link.b===m){scene.remove(link.visual);link.visual.traverse(o=>{if(o.geometry)o.geometry.dispose()})}
+ for(let i=structuralLinks.length-1;i>=0;i--)if(structuralLinks[i].a===m||structuralLinks[i].b===m)structuralLinks.splice(i,1);
+ for(let i=visibleWelds.length-1;i>=0;i--)if(visibleWelds[i].a===m||visibleWelds[i].b===m)visibleWelds.splice(i,1);
+ for(let i=entityWelds.length-1;i>=0;i--)if(entityWelds[i].a===m||entityWelds[i].b===m)entityWelds.splice(i,1);
  for(let i=welds.length-1;i>=0;i--)if(welds[i].a===m||welds[i].b===m)welds.splice(i,1);
  const i=crates.indexOf(m);if(i>=0)crates.splice(i,1);
  const j=obstacles.findIndex(o=>o.mesh===m);if(j>=0)obstacles.splice(j,1);
@@ -241,13 +245,50 @@ function getAimHit(){
  const hits=ray.intersectObjects(candidates,true);
  return hits.find(h=>h.object!==camera&&h.distance>0.1&&h.object.visible)||null;
 }
+function findAimedEntity(hit=getAimHit()){
+ if(!hit)return null;
+ let obj=hit.object;
+ while(obj&&obj!==scene&&!obj.userData.grabbable&&!crates.includes(obj))obj=obj.parent;
+ return obj&&obj!==scene?obj:null;
+}
+function isInScene(obj){let current=obj;while(current&&current!==scene)current=current.parent;return current===scene}
+function worldTranslate(obj,delta){
+ if(!obj.parent){obj.position.add(delta);return}
+ obj.parent.updateWorldMatrix(true,false);
+ const worldEnd=obj.getWorldPosition(new THREE.Vector3()).add(delta);
+ obj.position.copy(obj.parent.worldToLocal(worldEnd));
+}
+function makeConnectionVisual(type){
+ const group=new THREE.Group();
+ const metal=new THREE.MeshStandardMaterial({color:0x9ba5a8,metalness:.78,roughness:.32});
+ if(type==='hinge'){
+  const axle=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,1,12),metal);axle.name='axle';group.add(axle);
+  for(const side of [-1,1]){const plate=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.09,12),new THREE.MeshStandardMaterial({color:0x68767a,metalness:.72,roughness:.4}));plate.name='plate'+side;plate.position.y=side*.5;group.add(plate)}
+ }else if(type==='weld'){
+  const clamp=new THREE.Mesh(new THREE.BoxGeometry(.32,.2,.2),new THREE.MeshStandardMaterial({color:0xc58d4c,metalness:.65,roughness:.38}));clamp.name='clamp';group.add(clamp);
+  for(const x of [-.12,.12]){const bolt=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.22,8),metal);bolt.rotation.z=Math.PI/2;bolt.position.x=x;group.add(bolt)}
+ }else{
+  const rope=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(),new THREE.Vector3(0,-.2,0),new THREE.Vector3(0,-.4,0)]),12,.035,6,false),new THREE.MeshStandardMaterial({color:0xc7a66c,roughness:.9}));rope.name='rope';group.add(rope);
+ }
+ scene.add(group);return group;
+}
+function updateConnectionVisual(link,a,b){
+ const mid=a.clone().add(b).multiplyScalar(.5),delta=b.clone().sub(a),length=Math.max(.001,delta.length()),direction=delta.clone().normalize();
+ if(link.type==='rope'){
+  const sag=Math.min(1.5,length*.18),curve=new THREE.CatmullRomCurve3([a,mid.clone().add(new THREE.Vector3(0,-sag,0)),b]);
+  const rope=link.visual.getObjectByName('rope'),old=rope.geometry;rope.geometry=new THREE.TubeGeometry(curve,Math.max(8,Math.ceil(length*5)),.035,6,false);old.dispose();
+ }else{
+  link.visual.position.copy(mid);link.visual.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction);
+  if(link.type==='hinge')link.visual.scale.set(1,length,1);else link.visual.scale.setScalar(1);
+ }
+}
 function findAimedPart(){
  const hit=getAimHit();if(!hit)return null;
  let obj=hit.object;while(obj&&!obj.userData.vehiclePart)obj=obj.parent;
  return obj&&obj.userData.vehiclePart?obj:null;
 }
 function addVehiclePart(type){
- const hit=getAimHit(),root=findAimedCrate();if(!hit){say('Aim at a surface to place this part');return}
+ const hit=getAimHit(),parentEntity=findAimedEntity(hit),root=findAimedCrate();if(!hit){say('Aim at a surface to place this part');return}
  if(root)root.userData.vehicleParts=root.userData.vehicleParts||{seat:null,engine:null,wheels:[]};
  const parts=root?root.userData.vehicleParts:null;
  if(root&&type==='seat'&&parts.seat){say('This frame already has a seat');return}
@@ -269,9 +310,9 @@ function addVehiclePart(type){
   const hub=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.24,10),new THREE.MeshStandardMaterial({color:0x9a9d98,metalness:.7,roughness:.35}));hub.rotation.z=Math.PI/2;hub.position.copy(wheel.position);group.add(hub);
   if(parts)parts.wheels.push(group);
  }
- if(root)root.add(group);else scene.add(group);
- placeGroupAtHit(group,hit,root,type);
- say(type.toUpperCase()+(root?' placed at the aimed spot on the crate':' placed freely'));
+ if(parentEntity)parentEntity.add(group);else scene.add(group);
+ placeGroupAtHit(group,hit,parentEntity,type);
+ say(type.toUpperCase()+(parentEntity?' placed exactly on the aimed surface':' placed freely'));
 }
 function useWireTool(){
  const part=findAimedPart();if(!part){say('Aim at a circuit part, engine, or wheel');return}
@@ -294,7 +335,7 @@ function useWireTool(){
  say('Connect engine to wheel, or switch/sensor to motor');
 }
 function addCircuitPart(type){
- const hit=getAimHit(),root=findAimedCrate();
+ const hit=getAimHit(),parentEntity=findAimedEntity(hit),root=findAimedCrate();
  if(!hit){say('Aim at a surface to place this part');return}
  const group=new THREE.Group();group.userData.vehiclePart=type;group.userData.root=root;group.userData.grabbable=true;
  if(root)root.userData.vehicleParts=root.userData.vehicleParts||{seat:null,engine:null,wheels:[]};
@@ -316,20 +357,20 @@ function addCircuitPart(type){
  }else if(type==='glass'){
   const glass=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.4,.12),new THREE.MeshPhysicalMaterial({color:0x9bd5df,transparent:true,opacity:.34,roughness:.08,metalness:0,transmission:.25}));glass.position.y=1.25;glass.castShadow=true;group.add(glass);group.userData.glass=true;group.userData.grabbable=true;
  }
- if(root)root.add(group);else scene.add(group);
- placeGroupAtHit(group,hit,root,type);
- if(!root&&['switch','sensor','motor','gear'].includes(type))say(type.toUpperCase()+' placed freely (not connected to a vehicle)');else say(type.toUpperCase()+(root?' placed at the aimed spot':' placed freely'));
+ if(parentEntity)parentEntity.add(group);else scene.add(group);
+ placeGroupAtHit(group,hit,parentEntity,type);
+ if(!root&&['switch','sensor','motor','gear'].includes(type))say(type.toUpperCase()+' placed on the exact surface (not connected to a vehicle)');else say(type.toUpperCase()+(parentEntity?' placed on the exact surface':' placed freely'));
 }
 function connectStructure(type){
- const hit=getAimHit(),root=findAimedCrate();if(!hit||!root){say('Aim at a point on a crate');return}
- root.updateMatrixWorld(true);const localPoint=root.worldToLocal(hit.point.clone());
- if(!structureAnchor){structureAnchor={root,localPoint};say('First anchor set — choose the exact spot on another crate');return}
- if(structureAnchor.root===root){say('Choose a point on a different crate');return}
- const a=structureAnchor.root,b=root,localA=structureAnchor.localPoint;structureAnchor=null;
- const pa=a.localToWorld(localA.clone()),pb=b.localToWorld(localPoint.clone());
- const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([pa,pb]),new THREE.LineBasicMaterial({color:type==='rope'?0xc7a66c:0xc1c8cb}));
- scene.add(line);structuralLinks.push({type,a,b,line,localA,localB:localPoint.clone(),length:pa.distanceTo(pb),rest:pa.distanceTo(pb)});
- say(type.toUpperCase()+' connected at the two selected points');
+ const hit=getAimHit(),entity=findAimedEntity(hit);if(!hit||!entity){say('Aim at any grabbable object or part');return}
+ entity.updateWorldMatrix(true,false);const localPoint=entity.worldToLocal(hit.point.clone());
+ if(!structureAnchor){structureAnchor={entity,localPoint};say('First anchor selected — click the exact point on another object');return}
+ if(structureAnchor.entity===entity){say('Choose a different object');return}
+ const a=structureAnchor.entity,b=entity,localA=structureAnchor.localPoint;structureAnchor=null;
+ const pa=a.localToWorld(localA.clone()),pb=b.localToWorld(localPoint.clone()),length=pa.distanceTo(pb);
+ const visual=makeConnectionVisual(type),link={type,a,b,visual,localA,localB:localPoint.clone(),length,rest:length};
+ updateConnectionVisual(link,pa,pb);structuralLinks.push(link);
+ say(type.toUpperCase()+' connected — visible 3D connection created');
 }
 function toggleSwitch(){
  const part=findAimedPart();if(!part||part.userData.vehiclePart!=='switch'){addCircuitPart('switch');return}
@@ -425,12 +466,19 @@ function useGrabTool(){
  say('Object grabbed — Z/X rotate, C/V tilt, Q to drop');
 }
 function useWeldTool(){
- const m=findAimedCrate();if(!m){say('Aim at a crate to weld it');return}
- if(!weldTarget){weldTarget=m;say('First piece selected — aim at another crate');return}
- if(weldTarget===m){say('Choose a different crate');return}
- if(welds.some(w=>(w.a===weldTarget&&w.b===m)||(w.a===m&&w.b===weldTarget))){say('Already welded');weldTarget=null;return}
- welds.push({a:weldTarget,b:m,offset:m.position.clone().sub(weldTarget.position)});
- m.userData.velocity.copy(weldTarget.userData.velocity);weldTarget=null;say('WELDED — pieces are connected');
+ const hit=getAimHit(),entity=findAimedEntity(hit);if(!hit||!entity){say('Aim at any object or build part to weld it');return}
+ entity.updateWorldMatrix(true,false);const localPoint=entity.worldToLocal(hit.point.clone());
+ if(!weldTarget){weldTarget={entity,localPoint};say('First weld point selected — choose another object');return}
+ if(weldTarget.entity===entity){say('Choose a different object');return}
+ const first=weldTarget;weldTarget=null;const a=first.entity,b=entity,pa=a.localToWorld(first.localPoint.clone()),pb=b.localToWorld(localPoint.clone());
+ if(crates.includes(a)&&crates.includes(b)){
+  if(welds.some(w=>(w.a===a&&w.b===b)||(w.a===b&&w.b===a))){say('Those crates are already welded');return}
+  welds.push({a,b,offset:b.position.clone().sub(a.position)});b.userData.velocity.copy(a.userData.velocity);
+ }else{
+  const relative=new THREE.Matrix4().copy(a.matrixWorld).invert().multiply(b.matrixWorld);entityWelds.push({a,b,relative});
+ }
+ const visual=makeConnectionVisual('weld'),link={type:'weld',a,b,visual,localA:first.localPoint,localB:localPoint.clone()};
+ updateConnectionVisual(link,pa,pb);visibleWelds.push(link);say('WELDED — visible clamp added at your selected points');
 }
 function attachThruster(){
  const hit=getAimHit(),m=findAimedCrate();if(!hit){say('Aim at a surface to place a thruster');return}
@@ -537,12 +585,13 @@ function updatePhysics(dt){
  }
  for(let i=0;i<crates.length;i++)for(let j=i+1;j<crates.length;j++){const a=crates[i],b=crates[j];if(a===heldCrate||b===heldCrate||Math.abs(a.position.y-b.position.y)>=1.18)continue;const dx=b.position.x-a.position.x,dz=b.position.z-a.position.z,d=Math.hypot(dx,dz);if(d>0&&d<1.18){const nx=dx/d,nz=dz/d,o=(1.18-d)*.5;a.position.x-=nx*o;b.position.x+=nx*o;a.position.z-=nz*o;b.position.z+=nz*o}}
  for(let i=welds.length-1;i>=0;i--){const w=welds[i];if(crates.includes(w.a)&&crates.includes(w.b)){const stress=w.a.userData.velocity.distanceTo(w.b.userData.velocity);if(stress>22){welds.splice(i,1);say('A stressed weld snapped!')}else{w.b.position.copy(w.a.position).add(w.offset);w.b.userData.velocity.copy(w.a.userData.velocity)}}}
- for(let i=structuralLinks.length-1;i>=0;i--){const link=structuralLinks[i];if(!crates.includes(link.a)||!crates.includes(link.b)){scene.remove(link.line);structuralLinks.splice(i,1);continue}
-  const a=link.a.localToWorld(link.localA.clone()),b=link.b.localToWorld(link.localB.clone()),d=a.distanceTo(b);
-  link.line.geometry.dispose();link.line.geometry=new THREE.BufferGeometry().setFromPoints([a,b]);
-  if((link.type==='rope'&&d>link.length*1.65)||(link.type==='hinge'&&d>link.rest+3.5)){scene.remove(link.line);link.line.geometry.dispose();link.line.material.dispose();structuralLinks.splice(i,1);say(link.type.toUpperCase()+' snapped under stress');}
-  else if(((link.type==='rope'&&d>link.length)||(link.type==='hinge'&&d>link.rest+.12))&&d>0){const allowed=link.type==='rope'?link.length:link.rest;const pull=b.sub(a).normalize().multiplyScalar((d-allowed)*.5);link.a.position.add(pull);link.b.position.sub(pull)}
+ for(let i=entityWelds.length-1;i>=0;i--){const w=entityWelds[i];if(!isInScene(w.a)||!isInScene(w.b)){entityWelds.splice(i,1);continue}w.a.updateWorldMatrix(true,false);w.b.parent.updateWorldMatrix(true,false);const target=w.a.matrixWorld.clone().multiply(w.relative),local=w.b.parent.matrixWorld.clone().invert().multiply(target);local.decompose(w.b.position,w.b.quaternion,w.b.scale);w.b.updateMatrixWorld(true)}
+ for(let i=structuralLinks.length-1;i>=0;i--){const link=structuralLinks[i];if(!isInScene(link.a)||!isInScene(link.b)){scene.remove(link.visual);link.visual.traverse(o=>{if(o.geometry)o.geometry.dispose()});structuralLinks.splice(i,1);continue}
+  const a=link.a.localToWorld(link.localA.clone()),b=link.b.localToWorld(link.localB.clone()),d=a.distanceTo(b);updateConnectionVisual(link,a,b);
+  if((link.type==='rope'&&d>link.length*1.65)||(link.type==='hinge'&&d>link.rest+3.5)){scene.remove(link.visual);link.visual.traverse(o=>{if(o.geometry)o.geometry.dispose()});structuralLinks.splice(i,1);say(link.type.toUpperCase()+' snapped under stress');}
+  else if(((link.type==='rope'&&d>link.length)||(link.type==='hinge'&&d>link.rest+.12))&&d>0){const allowed=link.type==='rope'?link.length:link.rest;const pull=b.sub(a).normalize().multiplyScalar((d-allowed)*.5);worldTranslate(link.a,pull);worldTranslate(link.b,pull.clone().negate())}
  }
+ for(let i=visibleWelds.length-1;i>=0;i--){const link=visibleWelds[i];if(!isInScene(link.a)||!isInScene(link.b)){scene.remove(link.visual);visibleWelds.splice(i,1);continue}const a=link.a.localToWorld(link.localA.clone()),b=link.b.localToWorld(link.localB.clone());updateConnectionVisual(link,a,b)}
  for(const link of logicLinks){const p=[link.source.getWorldPosition(new THREE.Vector3()),link.motor.getWorldPosition(new THREE.Vector3())];link.line.geometry.dispose();link.line.geometry=new THREE.BufferGeometry().setFromPoints(p);const active=link.source.userData.vehiclePart==='switch'?link.source.userData.on:!!link.source.userData.active;link.motor.userData.active=active;if(active&&link.motor.userData.vehiclePart==='motor'){const root=link.motor.userData.root;if(root&&crates.includes(root)){root.userData.velocity.x+=-Math.sin(yaw)*dt*5;root.userData.velocity.z+=-Math.cos(yaw)*dt*5}}}
  for(const root of crates){for(const part of root.children){if(part.userData.vehiclePart==='motor'&&part.userData.rotor&&part.userData.active)part.userData.rotor.rotation.x+=dt*12;if(part.userData.vehiclePart==='gear'&&part.userData.rotor&&part.userData.active)part.userData.rotor.rotation.z+=dt*8}}
  updateFire(dt);
