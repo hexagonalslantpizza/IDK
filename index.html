@@ -240,28 +240,29 @@ function findAimedPart(){
  return obj&&obj.userData.vehiclePart?obj:null;
 }
 function addVehiclePart(type){
- const root=findAimedCrate();if(!root){say('Aim at a crate to attach vehicle parts');return}
- root.userData.vehicleParts=root.userData.vehicleParts||{seat:null,engine:null,wheels:[]};
- const parts=root.userData.vehicleParts;
- if(type==='seat'&&parts.seat){say('This crate already has a seat');return}
- if(type==='engine'&&parts.engine){say('This crate already has an engine');return}
- if(type==='wheel'&&parts.wheels.length>=4){say('This crate already has four wheels');return}
- const group=new THREE.Group();group.userData.vehiclePart=type;group.userData.root=root;
+ const hit=getAimHit(),root=findAimedCrate();if(!hit){say('Aim at a surface to place this part');return}
+ if(root)root.userData.vehicleParts=root.userData.vehicleParts||{seat:null,engine:null,wheels:[]};
+ const parts=root?root.userData.vehicleParts:null;
+ if(root&&type==='seat'&&parts.seat){say('This frame already has a seat');return}
+ if(root&&type==='engine'&&parts.engine){say('This frame already has an engine');return}
+ if(root&&type==='wheel'&&parts.wheels.length>=4){say('This frame already has four wheels');return}
+ const group=new THREE.Group();group.userData.vehiclePart=type;group.userData.root=root;group.userData.grabbable=!root;
  if(type==='seat'){
   const base=new THREE.Mesh(new THREE.BoxGeometry(.72,.16,.72),new THREE.MeshStandardMaterial({color:0x343d43,roughness:.75}));base.position.y=.72;group.add(base);
   const back=new THREE.Mesh(new THREE.BoxGeometry(.72,.8,.14),new THREE.MeshStandardMaterial({color:0x48545b,roughness:.8}));back.position.set(0,1.15,.28);group.add(back);
-  group.position.set(0,.6,0);parts.seat=group;
+  if(root)group.position.set(0,.6,0);else group.position.copy(surfacePlacement(hit,.02));if(parts)parts.seat=group;
  }else if(type==='engine'){
   const body=new THREE.Mesh(new THREE.BoxGeometry(.68,.52,.72),new THREE.MeshStandardMaterial({color:0x5b6870,metalness:.7,roughness:.4}));body.position.y=.55;group.add(body);
   const cap=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.16,12),new THREE.MeshStandardMaterial({color:0xc18b42,metalness:.55,roughness:.4}));cap.position.y=.9;group.add(cap);
-  group.position.set(0,.6,0);parts.engine=group;
+  if(root)group.position.set(0,.6,0);else group.position.copy(surfacePlacement(hit,.02));if(parts)parts.engine=group;
  }else{
-  const index=parts.wheels.length,side=index%2===0?-1:1,row=index<2?-.38:.38;
+  const index=parts?parts.wheels.length:0,side=index%2===0?-1:1,row=index<2?-.38:.38;
   const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.22,14),new THREE.MeshStandardMaterial({color:0x202326,roughness:.95}));wheel.rotation.z=Math.PI/2;wheel.position.set(side*.78,-.12,row);wheel.castShadow=true;group.add(wheel);
   const hub=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.24,10),new THREE.MeshStandardMaterial({color:0x9a9d98,metalness:.7,roughness:.35}));hub.rotation.z=Math.PI/2;hub.position.copy(wheel.position);group.add(hub);
-  group.position.set(0,.6,0);parts.wheels.push(group);
+  if(root)group.position.set(0,.6,0);else group.position.copy(surfacePlacement(hit,.02));if(parts)parts.wheels.push(group);
  }
- root.add(group);say(type.toUpperCase()+' attached to vehicle');
+ if(root)root.add(group);else scene.add(group);
+ say(type.toUpperCase()+(root?' attached to vehicle':' placed freely'));
 }
 function useWireTool(){
  const part=findAimedPart();if(!part){say('Aim at a circuit part, engine, or wheel');return}
@@ -420,7 +421,8 @@ function useWeldTool(){
  m.userData.velocity.copy(weldTarget.userData.velocity);weldTarget=null;say('WELDED — pieces are connected');
 }
 function attachThruster(){
- const m=findAimedCrate();if(!m){say('Aim at a crate to attach a thruster');return}
+ const hit=getAimHit(),m=findAimedCrate();if(!hit){say('Aim at a surface to place a thruster');return}
+ if(!m){const group=new THREE.Group();group.userData.grabbable=true;const body=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,.65,8),new THREE.MeshStandardMaterial({color:0x66747b,metalness:.65,roughness:.4}));body.rotation.x=Math.PI/2;body.castShadow=true;group.add(body);const nozzle=new THREE.Mesh(new THREE.ConeGeometry(.17,.3,8),new THREE.MeshStandardMaterial({color:0xd5a65e,metalness:.45,roughness:.5}));nozzle.rotation.x=-Math.PI/2;nozzle.position.z=.43;group.add(nozzle);group.position.copy(surfacePlacement(hit,.08));scene.add(group);say('Thruster placed freely');return}
  if(m.userData.thruster){say('This crate already has a thruster');return}
  m.userData.thruster=true;
  const body=new THREE.Mesh(new THREE.CylinderGeometry(.16,.22,.65,8),new THREE.MeshStandardMaterial({color:0x66747b,metalness:.65,roughness:.4}));
@@ -432,7 +434,7 @@ function attachThruster(){
 function placeArcadeBomb(){
  const hit=getAimHit();if(!hit){say('Aim at a surface to place a bomb');return}
  const mesh=new THREE.Mesh(new THREE.SphereGeometry(.38,12,8),new THREE.MeshStandardMaterial({color:0x353d43,roughness:.7,emissive:0x4b2413}));
- mesh.position.copy(hit.point).add(new THREE.Vector3(0,.4,0));mesh.castShadow=true;scene.add(mesh);
+ mesh.position.copy(surfacePlacement(hit,.4));mesh.castShadow=true;scene.add(mesh);
  const ring=new THREE.Mesh(new THREE.TorusGeometry(.43,.045,6,18),new THREE.MeshStandardMaterial({color:0xffa34d,emissive:0x8c3d12}));
  ring.rotation.x=Math.PI/2;ring.position.y=.16;mesh.add(ring);
  bombs.push({mesh,fuse:3,flash:null,flashTime:0});say('Arcade bomb placed — 3 second countdown!');
@@ -572,7 +574,6 @@ document.querySelectorAll('.buildTool').forEach(button=>{
  button.addEventListener('click',()=>{
   selectedBuildTool=button.dataset.build;
   document.querySelectorAll('.buildTool').forEach(b=>b.classList.toggle('selected',b===button));
-  document.getElementById('selectedBuildLabel').textContent=button.textContent;
   updateMode();
  });
 });
