@@ -329,7 +329,7 @@ function updatePhysics(dt){
   drivingRoot.userData.velocity.x*=Math.max(0,1-.5*dt);drivingRoot.userData.velocity.z*=Math.max(0,1-.5*dt);
   camera.position.set(drivingRoot.position.x,drivingRoot.position.y+2.3,drivingRoot.position.z+.1);
  }else if(drivingRoot&&!vehiclePowered(drivingRoot)){driverSeat=null;drivingRoot=null;say("Vehicle needs an engine wired to at least two wheels")}
- for(const m of crates{
+ for(const m of crates){
   const vel=m.userData.velocity;
   if(m===heldCrate){const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);m.position.lerp(camera.position.clone().addScaledVector(forward,3.2),.28);vel.set(0,0,0);continue}
   if(selectedSlot===4&&keys.KeyE&&m.userData.thruster&&findAimedCrate()===m){const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);vel.addScaledVector(forward,20*dt)}
