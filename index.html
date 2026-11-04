@@ -423,18 +423,26 @@ function placeArcadeBomb(){
  ring.rotation.x=Math.PI/2;ring.position.y=.16;mesh.add(ring);
  bombs.push({mesh,fuse:3,flash:null,flashTime:0});say('Arcade bomb placed — 3 second countdown!');
 }
+function shatterGlass(root,part){
+ if(!part.userData.glass)return;
+ const origin=part.getWorldPosition(new THREE.Vector3());root.remove(part);
+ for(let k=0;k<7;k++){const shard=new THREE.Mesh(new THREE.BoxGeometry(.12+rand()*.16,.12+rand()*.2,.035),new THREE.MeshBasicMaterial({color:0xa8dce5,transparent:true,opacity:.65}));shard.position.copy(origin).add(new THREE.Vector3((rand()-.5)*1.4,(rand()-.5)*1.2,(rand()-.5)*.8));scene.add(shard);glassShards.push({mesh:shard,life:2.5,velocity:new THREE.Vector3((rand()-.5)*7,2+rand()*5,(rand()-.5)*7)})}
+ say('Glass shattered!');
+}
+function splinterBeam(root,part){
+ if(!part.userData.burnable)return;
+ const origin=part.getWorldPosition(new THREE.Vector3());root.remove(part);
+ for(let k=0;k<5;k++){const splinter=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,.65),new THREE.MeshStandardMaterial({color:0x795a38,roughness:1}));splinter.position.copy(origin).add(new THREE.Vector3((rand()-.5)*2,(rand()-.5)*1.2,(rand()-.5)*1.2));scene.add(splinter);glassShards.push({mesh:splinter,life:2.8,velocity:new THREE.Vector3((rand()-.5)*6,2+rand()*4,(rand()-.5)*6)})}
+ ignite(root,'crate');say('Wooden beam splintered!');
+}
 function arcadeBlast(bomb){
  const center=bomb.mesh.position.clone();scene.remove(bomb.mesh);bomb.mesh=null;
  for(const root of [...crates]){
   const distance=root.position.distanceTo(center);
   if(distance<9){
    for(const part of [...root.children]){
-    if(part.userData.glass){
-     const origin=part.getWorldPosition(new THREE.Vector3());root.remove(part);
-     for(let k=0;k<7;k++){const shard=new THREE.Mesh(new THREE.BoxGeometry(.12+rand()*.16,.12+rand()*.2,.035),new THREE.MeshBasicMaterial({color:0xa8dce5,transparent:true,opacity:.65}));shard.position.copy(origin).add(new THREE.Vector3((rand()-.5)*1.4,(rand()-.5)*1.2,(rand()-.5)*.8));scene.add(shard);glassShards.push({mesh:shard,life:2.5,velocity:new THREE.Vector3((rand()-.5)*7,2+rand()*5,(rand()-.5)*7)})}
-     say('Glass shattered!');
-    }
-    if(part.userData.burnable)ignite(root,'crate');
+    if(part.userData.glass)shatterGlass(root,part);
+    else if(part.userData.burnable)splinterBeam(root,part);
    }
   }
  }
@@ -470,6 +478,7 @@ function updatePhysics(dt){
   if(selectedSlot===4&&keys.KeyE&&m.userData.thruster&&findAimedCrate()===m){const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);vel.addScaledVector(forward,20*dt)}
   vel.y-=15*dt;m.position.addScaledVector(vel,dt);
   if(m.position.y<.6){m.position.y=.6;if(vel.y<0)vel.y*=-.18;vel.x*=.985;vel.z*=.985}
+  if(Math.hypot(vel.x,vel.z)>18){for(const part of [...m.children])if(part.userData.glass)shatterGlass(m,part);else if(part.userData.burnable)splinterBeam(m,part)}
   for(const t of trees){if(t.fallen)continue;const dx=m.position.x-t.x,dz=m.position.z-t.z,d=Math.hypot(dx,dz),assembly=getWeldedAssembly(m);if(d<t.r+.68&&assembly.length>=2&&Math.hypot(vel.x,vel.z)>8){t.fallen=true;const axis=new THREE.Vector3(-dz,0,dx).normalize();treeFalls.push({tree:t,axis,angle:0});const oi=obstacles.findIndex(o=>o.tree===t);if(oi>=0)obstacles.splice(oi,1);say("WELDED ASSEMBLY knocked down a tree!")}}
   for(const o of obstacles){if(o.mesh===m||o.tree)continue;const dx=m.position.x-o.x,dz=m.position.z-o.z,d=Math.hypot(dx,dz),min=o.r+.68;if(d>0&&d<min){const nx=dx/d,nz=dz/d;m.position.x=o.x+nx*min;m.position.z=o.z+nz*min;const push=vel.x*nx+vel.z*nz;if(push<0){vel.x-=1.35*push*nx;vel.z-=1.35*push*nz}}}
   const obstacle=obstacles.find(o=>o.mesh===m);if(obstacle){obstacle.x=m.position.x;obstacle.z=m.position.z}
