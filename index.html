@@ -492,9 +492,9 @@ function updatePhysics(dt){
   const vel=m.userData.velocity;
   if(m===heldCrate){
    const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-   const probe=new THREE.Raycaster(camera.position,forward,0,3.2).intersectObjects([ground,...crates.filter(c=>c!==m)],true)[0];
-   const distance=probe?Math.max(1.1,probe.distance-.72):3.2;
-   const desired=camera.position.clone().addScaledVector(forward,distance);desired.y=Math.max(.6,desired.y);
+   const probe=new THREE.Raycaster(camera.position,forward,0,3.2).intersectObjects(scene.children.filter(o=>o!==m&&o!==sun),true)[0];
+   const distance=probe?probe.distance-.72:3.2;
+   const desired=m.position.clone();if(distance>0)desired.copy(camera.position).addScaledVector(forward,distance);desired.y=Math.max(.6,desired.y);
    m.position.lerp(desired,.35);vel.set(0,0,0);continue
   }
   if(selectedSlot===4&&keys.KeyE&&m.userData.thruster&&findAimedCrate()===m){const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);vel.addScaledVector(forward,20*dt)}
@@ -513,9 +513,9 @@ function updatePhysics(dt){
  }
  if(heldFreeObject){
   const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-  const probe=new THREE.Raycaster(camera.position,forward,0,3.2).intersectObjects([ground,...crates],true)[0];
-  const distance=probe?Math.max(1.1,probe.distance-.55):3.2;
-  const desired=camera.position.clone().addScaledVector(forward,distance);desired.y=Math.max(.08,desired.y);
+  const probe=new THREE.Raycaster(camera.position,forward,0,3.2).intersectObjects(scene.children.filter(o=>o!==heldFreeObject&&o!==sun),true)[0];
+  const distance=probe?probe.distance-.55:3.2;
+  const desired=heldFreeObject.position.clone();if(distance>0)desired.copy(camera.position).addScaledVector(forward,distance);desired.y=Math.max(.08,desired.y);
   heldFreeObject.position.lerp(desired,.35);
  }
  for(let i=0;i<crates.length;i++)for(let j=i+1;j<crates.length;j++){const a=crates[i],b=crates[j];if(a===heldCrate||b===heldCrate||Math.abs(a.position.y-b.position.y)>=1.18)continue;const dx=b.position.x-a.position.x,dz=b.position.z-a.position.z,d=Math.hypot(dx,dz);if(d>0&&d<1.18){const nx=dx/d,nz=dz/d,o=(1.18-d)*.5;a.position.x-=nx*o;b.position.x+=nx*o;a.position.z-=nz*o;b.position.z+=nz*o}}
