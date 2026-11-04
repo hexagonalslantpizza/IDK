@@ -9,8 +9,9 @@ A browser-based 3D sandbox prototype.
 - Construction menu for buildable objects
 - Free placement on ground and world surfaces
 - Crates stack, collide, and support the player
-- Seats, engines, wheels, switches, sensors, motors, gears, beams, and glass place at the exact surface point under the crosshair, including on a crate
-- Hinge and rope endpoints are anchored at the exact two points selected on separate crates
+- Seats, engines, wheels, switches, sensors, motors, gears, beams, and glass place at the exact surface point under the crosshair, including on other grabbable build parts
+- Ropes and hinges connect any two grabbable objects at the exact two points selected; both have visible 3D models
+- Welds connect crates or other grabbable build parts at the selected points and show a visible metal clamp
 - Grab tool picks up crates and build parts; held objects can be rotated and tilted
 - Thrusters, arcade bombs, simplified vehicles, circuit logic, destruction, and spreading fire
 
@@ -24,6 +25,8 @@ A browser-based 3D sandbox prototype.
 - Mouse wheel: cycle through hotbar tools
 - B: open/close build menu
 - Choose a build item, press DONE, then click the exact spot in the world where it should be placed
+- For rope or hinge: click the first grabbable object, then click the exact point on a second object
+- For weld: select the weld tool, click the first object, then click the second object; the clamp appears at the selected points
 - Z / X: rotate a held object left/right
 - C / V: tilt a held object while holding it
 - Q: drop a held object
