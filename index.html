@@ -559,7 +559,7 @@ function obbOverlap(a,b){
  return {depth:best,normal:bestAxis,point:a.center.clone().add(b.center).multiplyScalar(.5)};
 }
 function inverseInertia(obj){const h=physicsShape(obj).half;return 1/Math.max(.08,(obj.userData.mass||1)*(h.x*h.x+h.y*h.y+h.z*h.z)/3)}
-function applyBodyImpulse(obj,impulse,point){obj.userData.velocity.addScaledVector(impulse,1/(obj.userData.mass||1));const arm=point.clone().sub(bodyOBB(obj).center);obj.userData.angularVelocity.addScaledVector(new THREE.Vector3().crossVectors(arm,impulse),inverseInertia(obj))}
+function applyBodyImpulse(obj,impulse,point){obj.userData.velocity.addScaledVector(impulse,1/(obj.userData.mass||1));const arm=point.clone().sub(bodyOBB(obj).center);obj.userData.angularVelocity.addScaledVector(new THREE.Vector3().crossVectors(arm,impulse),inverseInertia(obj)*.16);obj.userData.angularVelocity.clampLength(0,5)}
 function integrateBodyRotation(obj,dt){const w=obj.userData.angularVelocity,speed=w.length();if(speed>.00001)obj.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(w.clone().normalize(),speed*dt)).normalize()}
 function resolveBodyPair(a,b){
  if(a===heldCrate||b===heldCrate||a===heldFreeObject||b===heldFreeObject)return;
@@ -567,16 +567,21 @@ function resolveBodyPair(a,b){
  const invA=1/(a.userData.mass||1),invB=1/(b.userData.mass||1),sum=invA+invB,correction=hit.normal.clone().multiplyScalar(Math.max(0,hit.depth-.002)*.78/sum);
  a.position.addScaledVector(correction,-invA);b.position.addScaledVector(correction,invB);
  const va=a.userData.velocity.clone().add(new THREE.Vector3().crossVectors(a.userData.angularVelocity,hit.point.clone().sub(A.center))),vb=b.userData.velocity.clone().add(new THREE.Vector3().crossVectors(b.userData.angularVelocity,hit.point.clone().sub(B.center))),closing=vb.sub(va).dot(hit.normal);
- if(closing<0){const impulse=hit.normal.clone().multiplyScalar(-1.12*closing/sum);applyBodyImpulse(a,impulse.clone().negate(),hit.point);applyBodyImpulse(b,impulse,hit.point)}
+ if(closing<0){const impulse=hit.normal.clone().multiplyScalar(-1.04*closing/sum);applyBodyImpulse(a,impulse.clone().negate(),hit.point);applyBodyImpulse(b,impulse,hit.point)}
 }
 function resolveGroundContact(obj,dt){
- const shape=physicsShape(obj),obb=bodyOBB(obj),q=obj.getWorldQuaternion(new THREE.Quaternion()),origin=obj.getWorldPosition(new THREE.Vector3());let lowest=Infinity,contacts=[];
- for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1]){const p=shape.center.clone().add(new THREE.Vector3(x*shape.half.x,y*shape.half.y,z*shape.half.z)).applyQuaternion(q).add(origin);if(p.y<lowest-.0001){lowest=p.y;contacts=[p]}else if(Math.abs(p.y-lowest)<.0001)contacts.push(p)}
- if(lowest>=0)return;
- const contact=contacts.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).multiplyScalar(1/contacts.length);obj.position.y-=lowest;
- const arm=contact.sub(obb.center),mass=obj.userData.mass||1,torque=new THREE.Vector3().crossVectors(arm,new THREE.Vector3(0,-15*mass,0));
- obj.userData.angularVelocity.addScaledVector(torque,inverseInertia(obj)*.85*dt);
- const vel=obj.userData.velocity;if(vel.y<0)vel.y=Math.max(0,-vel.y*.08);vel.x*=.985;vel.z*=.985;obj.userData.angularVelocity.multiplyScalar(.995);
+ const shape=physicsShape(obj),q=obj.getWorldQuaternion(new THREE.Quaternion()),origin=obj.getWorldPosition(new THREE.Vector3());let lowest=Infinity;
+ for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1]){const p=shape.center.clone().add(new THREE.Vector3(x*shape.half.x,y*shape.half.y,z*shape.half.z)).applyQuaternion(q).add(origin);lowest=Math.min(lowest,p.y)}
+ const vel=obj.userData.velocity,grounded=lowest<=.045&&vel.y<=.35;
+ if(lowest<0)obj.position.y-=lowest;
+ if(grounded){
+  if(vel.y<.35)vel.y=0;
+  const horizontalDamping=Math.exp(-5.5*dt),angularDamping=Math.exp(-10*dt);
+  vel.x*=horizontalDamping;vel.z*=horizontalDamping;
+  obj.userData.angularVelocity.multiplyScalar(angularDamping);
+  if(obj.userData.angularVelocity.length()<.035)obj.userData.angularVelocity.set(0,0,0);
+ }
+ return grounded;
 }
 function updatePhysics(dt){
  updateSensorStates();
@@ -597,7 +602,7 @@ function updatePhysics(dt){
    vel.set(0,0,0);m.userData.angularVelocity.set(0,0,0);continue;
   }
   if(crates.includes(m)&&selectedSlot===4&&keys.KeyE&&m.userData.thruster&&findAimedCrate()===m){const forward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);vel.addScaledVector(forward,20*dt)}
-  vel.y-=15*dt;m.position.addScaledVector(vel,dt);m.userData.angularVelocity.multiplyScalar(Math.max(0,1-.18*dt));integrateBodyRotation(m,dt);
+  vel.y-=15*dt;m.position.addScaledVector(vel,dt);m.userData.angularVelocity.multiplyScalar(Math.exp(-2.8*dt));m.userData.angularVelocity.clampLength(0,5);integrateBodyRotation(m,dt);
   resolveGroundContact(m,dt);
   if(crates.includes(m)){
    if(Math.hypot(vel.x,vel.z)>18){for(const part of [...m.children])if(part.userData.glass)shatterGlass(m,part);else if(part.userData.burnable)splinterBeam(m,part)}
@@ -605,7 +610,7 @@ function updatePhysics(dt){
    for(const o of obstacles){if(o.mesh||o.tree)continue;const dx=m.position.x-o.x,dz=m.position.z-o.z,d=Math.hypot(dx,dz),min=o.r+.68;if(d>0&&d<min){const nx=dx/d,nz=dz/d;m.position.x=o.x+nx*min;m.position.z=o.z+nz*min;const push=vel.x*nx+vel.z*nz;if(push<0){vel.x-=1.35*push*nx;vel.z-=1.35*push*nz}}}
    const obstacle=obstacles.find(o=>o.mesh===m);if(obstacle){obstacle.x=m.position.x;obstacle.z=m.position.z}
   }
-  vel.multiplyScalar(Math.max(0,1-.12*dt));
+  vel.multiplyScalar(Math.exp(-.22*dt));
  }
  for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++)resolveBodyPair(bodies[i],bodies[j]);
  for(let i=welds.length-1;i>=0;i--){const w=welds[i];if(crates.includes(w.a)&&crates.includes(w.b)){const stress=w.a.userData.velocity.distanceTo(w.b.userData.velocity);if(stress>22){welds.splice(i,1);say('A stressed weld snapped!')}else{w.b.position.copy(w.a.position).add(w.offset);w.b.userData.velocity.copy(w.a.userData.velocity)}}}
