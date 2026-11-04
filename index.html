@@ -314,7 +314,7 @@ function connectStructure(type){
  say(type.toUpperCase()+' connected');
 }
 function toggleSwitch(){
- const part=findAimedPart();if(!part||part.userData.vehiclePart!=='switch'){say('Aim at a switch to toggle it');return}
+ const part=findAimedPart();if(!part||part.userData.vehiclePart!=='switch'){addCircuitPart('switch');return}
  part.userData.on=!part.userData.on;
  if(part.userData.lever)part.userData.lever.rotation.z=part.userData.on ? .35 : -.35;
  say(part.userData.on?'Switch ON':'Switch OFF');
